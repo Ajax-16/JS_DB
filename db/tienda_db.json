@@ -1,0 +1,14 @@
+[
+  [
+    [
+      "users",
+      0
+    ],
+    [
+      "id",
+      "name",
+      "email",
+      "password"
+    ]
+  ]
+]
