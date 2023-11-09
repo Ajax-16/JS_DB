@@ -20,7 +20,7 @@ export class DB {
         this.filePath = resolve(__dirname, `./db/${this.name}_db.json`);
     }
 
-    async use() {
+    async init() {
         try {
             const fileContent = await fs.readFile(this.filePath, 'utf8');
             this.tables = JSON.parse(fileContent);

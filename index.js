@@ -2,11 +2,9 @@ import { DB } from "./db.js";
 
 async function main(){
 
-    let tienda = new DB('tienda');
+    // let db = new DB('db');
 
-    await tienda.use();
-    
-    console.log(tienda.getOneTable('users'));
+    // db.init();
 
 }
 
