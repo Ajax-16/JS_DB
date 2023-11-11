@@ -9,7 +9,8 @@ export default {
       },
       {
         name: "tcp-server",
-        script: "tcp-server.js",
+        script: "node",
+        args: "tcp-server.js",
       },
     ],
   };
