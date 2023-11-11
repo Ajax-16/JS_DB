@@ -4,5 +4,5 @@
     "execMap": {
       "js": "node --experimental-modules"
     },
-    "ext": "js,json"
+    "ext": "js"
   }
