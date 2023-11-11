@@ -1,6 +1,6 @@
-import { DB } from "./db.js";
-
 async function main(){
+
+    const DB = await import('./db.js')
 
     let db = new DB('db');
 
