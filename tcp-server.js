@@ -4,19 +4,16 @@ import fs from 'fs';
 const server = net.createServer((socket) => {
     socket.on('data', (data) => {
         const dataString = data.toString();
-        const [operation, filePath, fileContent] = dataString.split('|');
-      
-        if (operation === 'write') {
+        const [filePath, fileContent] = dataString.split('|');
           fs.writeFile(filePath, fileContent, (err) => {
             if (err) throw err;
-            console.log(`Archivo ${filePath} modificado exitosamente.`);
+            const oldConsoleLog = console.log;
+            console.log = function (message) {
+            oldConsoleLog.apply(console, arguments);
+            socket.write(message);
+  };
           });
-        } else if (operation === 'read') {
-          fs.readFile(filePath, 'utf8', (err, content) => {
-            socket.write(content);
-            if (err) throw err;
-          });
-        }
+
       });
 });
 
