@@ -1,38 +1,25 @@
+import net from 'net';
 import fs from 'fs';
-import http from 'http';
-import { Server as SocketIoServer } from 'socket.io';
 
-const server = http.createServer();
-const io = new SocketIoServer(server);
+const server = net.createServer((socket) => {
+  socket.on('data', (data) => {
+  const dataString = data.toString();
+  const [operation, filePath, fileContent] = dataString.split('|');
 
-let oldConsoleLog;
-
-io.on('connection', (socket) => {
-  console.log('Cliente conectado.');
-
-  socket.on('disconnect', () => {
-    console.log('Cliente desconectado.');
-    if (oldConsoleLog) {
-      console.log = oldConsoleLog;
-    }
-  });
-
-  socket.on('writeFile', ({ filePath, fileContent }) => {
+  if (operation === 'write') {
     fs.writeFile(filePath, fileContent, (err) => {
-      if (err) {
-        console.error('Error al escribir en el archivo:', err);
-        return;
-      }
-
-      oldConsoleLog = console.log;
-      console.log = function (message) {
-        socket.emit('consoleLog', { message });
-        oldConsoleLog.apply(console, arguments);
-      };
+      if (err) throw err;
+      console.log(`Archivo ${filePath} modificado exitosamente.`);
     });
-  });
+  } else if (operation === 'read') {
+    fs.readFile(filePath, 'utf8', (err, content) => {
+      if (err) throw err;
+      socket.write(content);
+    });
+  }
+});
 });
 
 server.listen(3000, '0.0.0.0', () => {
-  console.log('Servidor y Socket.io escuchando en el puerto 3000');
+  console.log('Servidor TCP escuchando en el puerto 3000');
 });
