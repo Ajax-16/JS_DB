@@ -1,42 +1,38 @@
-import net from 'net';
 import fs from 'fs';
+import http from 'http';
+import { Server as SocketIoServer } from 'socket.io';
 
-let oldConsoleLog; // Declarar fuera para que sea accesible en todo el alcance
+const server = http.createServer();
+const io = new SocketIoServer(server);
 
-const server = net.createServer((socket) => {
-  socket.on('data', (data) => {
-    const dataString = data.toString();
-    const [filePath, fileContent] = dataString.split('|');
+let oldConsoleLog;
 
+io.on('connection', (socket) => {
+  console.log('Cliente conectado.');
+
+  socket.on('disconnect', () => {
+    console.log('Cliente desconectado.');
+    if (oldConsoleLog) {
+      console.log = oldConsoleLog;
+    }
+  });
+
+  socket.on('writeFile', ({ filePath, fileContent }) => {
     fs.writeFile(filePath, fileContent, (err) => {
       if (err) {
         console.error('Error al escribir en el archivo:', err);
         return;
       }
 
-      // Después de escribir en el archivo, redirigir la consola al cliente
-      oldConsoleLog = console.log; // Asignar aquí para que esté definido
+      oldConsoleLog = console.log;
       console.log = function (message) {
+        socket.emit('consoleLog', { message });
         oldConsoleLog.apply(console, arguments);
-        socket.write(`mensaje|${message}`);
       };
     });
-  });
-
-  socket.on('end', () => {
-    console.log('Cliente desconectado.');
-
-    // Restaurar console.log original cuando el cliente se desconecta
-    if (oldConsoleLog) {
-      console.log = oldConsoleLog;
-    }
-  });
-
-  socket.on('error', (err) => {
-    console.error('Error en la conexión del cliente:', err);
   });
 });
 
 server.listen(3000, '0.0.0.0', () => {
-  console.log('Servidor TCP escuchando en el puerto 3000');
+  console.log('Servidor y Socket.io escuchando en el puerto 3000');
 });
