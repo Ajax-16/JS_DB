@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "nodemon",
-      script: "nodemon",
+      script: "nodemon --ext js",
       args: "index.js",
       watch: true,
       ignore_watch: ["node_modules", "logs"],
