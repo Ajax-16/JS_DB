@@ -6,16 +6,6 @@ async function main(){
 
     // db.init();
 
-    let db = new DB('cliente');
-
-    await db.init();
-
-    console.log(db.find({
-        tableName: 'users',
-        condition: 'age',
-        conditionValue: 20
-    }));
-
 }
 
 main();
