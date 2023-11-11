@@ -55,6 +55,10 @@ export class DB {
             return [['TABLE CANNOT BE CREATED!', 'NAME ' + tableName + ' ALREADY IN USE'], []];
         }
 
+        if(tableName === undefined){
+            tableName = 'table';
+        }
+
         if(primaryKey === undefined || columns === undefined ){
             primaryKey = 'id';
             columns = [];
