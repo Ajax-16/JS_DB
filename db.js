@@ -275,11 +275,17 @@ export class DB {
 
         let elementExist = dbMethods.deleteAllByContent(columns, conditionValue);
 
+        let inserts = 0;
+
         if (elementExist) {
-            for (let i = 2; i < limit+2; i++) {
+            for (let i = 2; i < table.length; i++) {
                 const foundElement = treeSearch(columns, table[i][columnIndex]);
+                if(inserts === limit){
+                    break;
+                }
                 if (foundElement === -1) {
                     dbMethods.insert(rows, table[i]);
+                    inserts++;
                 }
             }
             
