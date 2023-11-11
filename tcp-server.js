@@ -13,8 +13,8 @@ const server = net.createServer((socket) => {
           });
         } else if (operation === 'read') {
           fs.readFile(filePath, 'utf8', (err, content) => {
-            if (err) throw err;
             socket.write(content);
+            if (err) throw err;
           });
         }
       });
