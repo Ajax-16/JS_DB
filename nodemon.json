@@ -1,0 +1,8 @@
+{
+    "ignore": ["*.json", "db", "node_modules"],
+    "watch": ["./"],
+    "execMap": {
+      "js": "node --experimental-modules"
+    },
+    "ext": "js"
+  }

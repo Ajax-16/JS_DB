@@ -4,7 +4,7 @@ async function main(){
 
     let db = new DB('db');
 
-    await db.init();
+    // db.init();
 
 }
 
