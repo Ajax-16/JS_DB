@@ -187,6 +187,7 @@ export class DB {
     }
 
     async delete({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue }) {
+        conditionValue = parseInt(conditionValue);
         if(!this.intialized){
             console.log('ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['ROW OR ROWS CANNOT BE DELETED!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
