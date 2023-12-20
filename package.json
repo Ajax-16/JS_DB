@@ -1,14 +1,18 @@
 {
-  "name": "ajaxdb",
+  "name": "ajax16-db",
   "version": "1.0.0",
   "description": "Not-Object-based JS database management system",
   "main": "index.js",
   "scripts": {
     "start": "nodemon --watch ./ -e js,json index.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ajax-16/JS_DB.git"
+  },
   "keywords": [],
   "author": "David Bernárdez Luque",
-  "license": "ISC",
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "socket.io": "^4.7.2",
