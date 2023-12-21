@@ -41,22 +41,6 @@ export class DB {
         }
     }
 
-    async dropDb(dbName) {
-        try {
-            const dbPath = resolve(__dirname, `./db/${dbName}_db.json`);
-            await fs.unlink(dbPath);
-            console.log('DATABASE DELETED SUCCESSFULLY');
-            return true;
-        } catch (err) {
-            if (err.code === 'ENOENT') {
-                console.log('DATABASE NOT FOUND');
-            } else {
-                console.log('ERROR DELETING DATABASE:', err.message);
-            }
-            return false;
-        }
-    }
-
     async createTable({tableName, primaryKey, columns}) {
 
         if(!this.intialized){
@@ -368,4 +352,20 @@ export class DB {
         await fs.writeFile(this.filePath, JSON.stringify(this.tables, null, 2));
     }
 
+}
+
+export async function dropDb(dbName) {
+    try {
+        const dbPath = resolve(__dirname, `./db/${dbName}_db.json`);
+        await fs.unlink(dbPath);
+        console.log('DATABASE DELETED SUCCESSFULLY');
+        return true;
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log('DATABASE NOT FOUND');
+        } else {
+            console.log('ERROR DELETING DATABASE:', err.message);
+        }
+        return false;
+    }
 }
