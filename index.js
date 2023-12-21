@@ -36,12 +36,28 @@ export class DB {
                 console.log('DATABASE CREATED SUCCESSFULY');
                 this.intialized = true;
             } catch (writeError) {
-                console.error('ERROR WRITING ON DATABASE FILE:', writeError);
+                console.error('ERROR WRITING ON DATABASE:', writeError);
             }
         }
     }
 
-    createTable({tableName, primaryKey, columns}) {
+    async dropDb(dbName) {
+        try {
+            const dbPath = resolve(__dirname, `./db/${dbName}_db.json`);
+            await fs.unlink(dbPath);
+            console.log('DATABASE DELETED SUCCESSFULLY');
+            return true;
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                console.log('DATABASE NOT FOUND');
+            } else {
+                console.log('ERROR DELETING DATABASE:', err.message);
+            }
+            return false;
+        }
+    }
+
+    async createTable({tableName, primaryKey, columns}) {
 
         if(!this.intialized){
             console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. DATABASE "' + this.name + '" NOT INITIALIZED');
@@ -85,7 +101,7 @@ export class DB {
 
         dbMethods.insert(this.tables, table);
 
-        this.save();
+        await this.save();
 
         console.log('TABLE WITH NAME "' + tableName + '" CREATED SUCCESSFULY');
 
@@ -263,9 +279,6 @@ export class DB {
                 }
             }
         }
-
-        let anyRowsAffected = false;
-    
         if (setValues && setValues.length === set.length) {
             for (let i = 2; i < table.length; i++) {
                 const conditionIndex = table[1].indexOf(condition);

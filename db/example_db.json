@@ -1,13 +1,13 @@
 [
-  [
     [
-      "example",
-      0
-    ],
-    [
-      "id",
-      "delete",
-      "me"
+        [
+          "example",
+          0
+        ],
+        [
+          "id",
+          "delete",
+          "me"
+        ]
     ]
-  ]
 ]
