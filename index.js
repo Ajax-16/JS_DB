@@ -102,7 +102,7 @@ export class DB {
 
         let result;
 
-        let tableNames = this.getAllTableNames();
+        let tableNames = this.showAllTableNames();
 
         let tableIndex = treeSearch(tableNames, tableName);
 
@@ -129,7 +129,32 @@ export class DB {
         return this.tables;
     }
 
-    getAllTableNames() {
+    getOneTable(tableName) {
+        if(!this.intialized){
+            console.log('TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
+            return [['TABLE NOT FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+        }
+        let tableNames = this.showAllTableNames();
+        let position = treeSearch(tableNames, tableName);
+        if (position !== -1) {
+            return this.tables[position];
+        }
+        return [['TABLE NOT FOUND!'], []];
+    }
+
+    showAllTables() {
+        if(!this.intialized){
+            console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
+            return [['ANY TABLES FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+        }
+        let tablesCopy = [...this.tables];
+        for(let i = 0; i < tablesCopy.length; i++){
+            tablesCopy[i][0].pop();
+        }
+        return tablesCopy;
+    }
+
+    showAllTableNames() {
         if(!this.intialized){
             console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['ANY TABLES FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
@@ -141,17 +166,49 @@ export class DB {
         return tableNames;
     }
 
-    getOneTable(tableName) {
+    showOneTable(tableName) {
         if(!this.intialized){
             console.log('TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['TABLE NOT FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
-        let tableNames = this.getAllTableNames();
+        let tableNames = this.showAllTableNames();
         let position = treeSearch(tableNames, tableName);
         if (position !== -1) {
-            return this.tables[position];
+            let tableCopy = [...this.tables[position]];
+            tableCopy[0].pop();
+            return tableCopy;
         }
         return [['TABLE NOT FOUND!'], []];
+    }
+
+    describeOneTable(tableName) {
+        if(!this.intialized){
+            console.log('TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
+            return [['TABLE NOT FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+        }
+        let tableNames = this.showAllTableNames();
+        let position = treeSearch(tableNames, tableName);
+        if(position !== -1) {
+            let tableDesc = [[...this.tables[position][0]]];
+            tableDesc[0].pop();
+            dbMethods.insert(tableDesc, this.tables[position][1]);
+            return tableDesc;
+        }
+        return [['TABLE NOT FOUND!'], []];
+    }
+
+    describeAllTables() {
+        if(!this.intialized){
+            console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
+            return [['ANY TABLES FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+        }
+        let tablesDesc = [];
+        for(let i = 0; i < this.tables.length; i++){
+        tablesDesc[i] = [[...this.tables[i][0]]];
+        tablesDesc[i][0].pop();
+        dbMethods.insert(tablesDesc[i], this.tables[i][1]);
+        }
+        return tablesDesc;
     }
 
     async insert({ tableName, values }) {
