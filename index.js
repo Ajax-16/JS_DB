@@ -149,7 +149,7 @@ export class DB {
         }
         let tablesCopy = [...this.tables];
         for(let i = 0; i < tablesCopy.length; i++){
-            tablesCopy[i].slice(1, 1);
+            tablesCopy[i][0] = tablesCopy[i][0].slice(0, 1);
         }
         return tablesCopy;
     }
@@ -175,7 +175,7 @@ export class DB {
         let position = treeSearch(tableNames, tableName);
         if (position !== -1) {
             let tableCopy = [...this.tables[position]];
-            tableCopy[0].slice(1, 1);
+            tableCopy[0] = tableCopy[0].slice(0, 1);
             return tableCopy;
         }
         return [['TABLE NOT FOUND!'], []];
@@ -190,7 +190,7 @@ export class DB {
         let position = treeSearch(tableNames, tableName);
         if(position !== -1) {
             let tableDesc = [[...this.tables[position][0]]];
-            tableDesc[0].slice(1, 1);
+            tableDesc[0] = tableDesc[0].slice(0, 1);
             dbMethods.insert(tableDesc, this.tables[position][1]);
             return tableDesc;
         }
@@ -205,7 +205,7 @@ export class DB {
         let tablesDesc = [];
         for(let i = 0; i < this.tables.length; i++){
         tablesDesc[i] = [[...this.tables[i][0]]];
-        tablesDesc[i][0].slice(1, 1);
+        tablesDesc[i][0] = tablesDesc[i][0].slice(0, 1);
         dbMethods.insert(tablesDesc[i], this.tables[i][1]);
         }
         return tablesDesc;

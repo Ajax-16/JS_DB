@@ -1,6 +1,6 @@
 {
   "name": "ajax16-db",
-  "version": "1.0.5-3",
+  "version": "1.0.6",
   "description": "Not-Object-based JS database management system",
   "main": "index.js",
   "scripts": {
