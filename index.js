@@ -481,8 +481,6 @@ export class DB {
 
         let elementExist = dbMethods.deleteAllByContent(columns, conditionValue);
 
-        console.log(elementExist)
-
         let inserts = 0;
 
         if (elementExist) {
