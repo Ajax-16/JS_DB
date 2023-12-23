@@ -571,16 +571,11 @@ export async function describeDatabase(currentDb, dbName) {
 
     await newDb.init();
 
-    let tablesDesc = [];
-    for (let i = 0; i < newDb.tables.length; i++) {
-        tablesDesc[i] = [[...newDb.tables[i][0]]];
-        tablesDesc[i][0] = tablesDesc[i][0].slice(0, 1);
-        dbMethods.insert(tablesDesc[i], newDb.tables[i][1]);
-    }
+    let dbDesc = newDb.showAllTableNames();
     
     if(currentDb instanceof DB){
         currentDb.init();
     }
 
-    return tablesDesc;
+    return dbDesc;
 }
