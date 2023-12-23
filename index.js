@@ -325,32 +325,33 @@ export class DB {
     * @returns {Promise<boolean>|Array} True if the row or rows were successfully deleted, false if not; otherwise, it returns an array of arrays containing the error.
     */
     async delete({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue }) {
-        conditionValue = parseInt(conditionValue);
+        
         if (!this.intialized) {
             console.log('ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['ROW OR ROWS CANNOT BE DELETED!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
+        
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'TABLE NOT FOUND!') {
             console.log('ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXISTS')
             return [['ROW OR ROWS CANNOT BE DELETED!', 'TABLE ' + tableName + ' DOESN\'T EXISTS'], []]
         }
-
+    
         let columnIndex = treeSearch(table[1], condition);
-
+    
         if (columnIndex === -1) {
             console.log('ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN')
             return [['ROW OR ROWS CANNOT BE DELETED!', 'CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []]
         }
-
+    
         let columns = [];
-
+    
         for (let i = 2; i < table.length; i++) {
             dbMethods.insert(columns, table[i][columnIndex]);
         }
-
+    
         let elementExist = dbMethods.deleteAllByContent(columns, conditionValue);
-
+    
         if (elementExist) {
             for (let i = table.length - 1; i >= 2; i--) {
                 const deleteElement = treeSearch(columns, table[i][columnIndex]);
@@ -360,14 +361,12 @@ export class DB {
                     await this.save();
                 }
             }
-
+    
             return true;
-
         } else {
             console.log('0 ROWS AFFECTED')
             return false;
         }
-
     }
 
     /**
@@ -481,6 +480,8 @@ export class DB {
         let rows = [[table[0][0]], values];
 
         let elementExist = dbMethods.deleteAllByContent(columns, conditionValue);
+
+        console.log(elementExist)
 
         let inserts = 0;
 
