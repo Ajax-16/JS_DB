@@ -49,5 +49,27 @@
       "foo",
       "bar"
     ]
+  ],
+  [
+    [
+      "example2",
+      0
+    ],
+    [
+      "id",
+      "name",
+      "age"
+    ]
+  ],
+  [
+    [
+      "example3",
+      0
+    ],
+    [
+      "id",
+      "name",
+      "age"
+    ]
   ]
 ]
