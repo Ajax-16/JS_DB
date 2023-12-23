@@ -322,7 +322,7 @@ export class DB {
     * @param {string} options.tableName - The name of the table.
     * @param {string} [options.condition] - The column to use as a condition for deletion.
     * @param {string|number} options.conditionValue - The value to compare with the condition column.
-    * @returns {Promise<boolean>|Array} True if the row or rows were successfully deleted; otherwise, it returns an array of arrays containing the error.
+    * @returns {Promise<boolean>|Array} True if the row or rows were successfully deleted, false if not; otherwise, it returns an array of arrays containing the error.
     */
     async delete({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue }) {
         conditionValue = parseInt(conditionValue);
@@ -365,6 +365,7 @@ export class DB {
 
         } else {
             console.log('0 ROWS AFFECTED')
+            return false;
         }
 
     }
