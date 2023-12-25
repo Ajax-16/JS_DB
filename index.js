@@ -23,6 +23,10 @@ export class DB {
     */
     name = 'db';
     /**
+    * @property {string} name - The file path to the current database.
+    */
+    filePath = '';
+    /**
     * @property {Array} keywords - An array of keywords used for checking table names.
     */
     keywords = ['TABLE NOT FOUND!', 'TABLE CANNOT BE CREATED!', 'ROW CANNOT BE CREATED!', 'ROW OR ROWS CANNOT BE DELETED!', 'ROW OR ROWS NOT FOUND!', 'ROW OR ROWS NOT FOUND!, ANY TABLES FOUND!']
@@ -38,7 +42,6 @@ export class DB {
     */
     constructor(name) {
         this.name = name;
-        this.filePath = resolve(__dirname, `./db/${this.name}_db.json`);
     }
 
     /**
@@ -49,6 +52,7 @@ export class DB {
     */
     async init() {
         try {
+            this.filePath = await getFilePath(this.name);
             const fileContent = await fs.readFile(this.filePath, 'utf8');
             this.tables = JSON.parse(fileContent);
             this.intialized = true;
@@ -578,4 +582,21 @@ export async function describeDatabase(currentDb, dbName) {
     }
 
     return dbDesc;
+}
+
+async function getFilePath(dbName) {
+    const baseDir = process.platform === 'win32' ? 'C:/AjaxdbData/' : '/var/AjaxdbData/';
+    const dbFolder = path.join(baseDir, 'ajaxdb');
+
+try {
+    await fs.access(dbFolder);
+} catch (error) {
+    if (error.code === 'ENOENT') {
+        await fs.mkdir(dbFolder, { recursive: true });
+    } else {
+        throw error;
+    }
+}
+
+    return path.join(dbFolder, `${dbName}_db.json`);
 }
