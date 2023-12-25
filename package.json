@@ -1,6 +1,6 @@
 {
   "name": "ajaxdb-core",
-  "version": "1.0.8-3",
+  "version": "1.0.9",
   "description": "Not-Object-based JS database management system",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ajax-16/JS_DB.git"
+    "url": "git+https://github.com/Ajax-16/JS_DB_CORE.git"
   },
   "keywords": [],
   "author": "David Bernárdez Luque",
