@@ -534,7 +534,7 @@ export class DB {
  */
 export async function dropDb(dbName) {
     try {
-        const dbPath = resolve(__dirname, `./db/${dbName}_db.json`);
+        const dbPath = path.join(getDbFolder(), `/${dbName}_db.json`);
         await fs.unlink(dbPath);
         console.log('DATABASE DELETED SUCCESSFULLY');
         return true;
@@ -549,16 +549,16 @@ export async function dropDb(dbName) {
 }
 
 /**
-    * @function describeAllTables
-    * @description Retrieves information about all tables in the database.
+    * @function describeDatabase
+    * @description Retrieves the name of all tables in the database.
     * @param  {String} - The name of the database you want to describe
-    * @returns {Array} An array containing information about all tables.
+    * @returns {Array} An array containing the name about all tables.
     */
 export async function describeDatabase(currentDb, dbName) {
 
     let databases = [];
 
-    let files = await fs.readdir(path.join(__dirname, 'db'));
+    let files = await fs.readdir(getDbFolder());
 
     files.forEach((file) => {
         dbMethods.insert(databases, file.split('_').shift());
@@ -584,9 +584,15 @@ export async function describeDatabase(currentDb, dbName) {
     return dbDesc;
 }
 
-async function getFilePath(dbName) {
+function getDbFolder() {
     const baseDir = process.platform === 'win32' ? 'C:/AjaxdbData/' : '/var/AjaxdbData/';
     const dbFolder = path.join(baseDir, 'ajaxdb');
+
+    return dbFolder;
+}
+
+async function getFilePath(dbName) {
+    const dbFolder = getDbFolder();
 
 try {
     await fs.access(dbFolder);
