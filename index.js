@@ -561,8 +561,8 @@ export async function describeDatabase(currentDb, dbName) {
 }
 
 function getDbFolder() {
-    const baseDir = process.platform === 'win32' ? 'C:/AjaxdbData/' : '/var/AjaxdbData/';
-    const dbFolder = path.join(baseDir, 'ajaxdb');
+    const baseDir = process.platform === 'win32' ? 'C:/ajaxdb/' : '/var/ajaxdb/';
+    const dbFolder = path.join(baseDir, 'data');
 
     return dbFolder;
 }
