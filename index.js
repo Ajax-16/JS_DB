@@ -46,9 +46,9 @@ export class DB {
     * @constructor
     * @param {string} name - The name of the database.
     */
-    constructor(name) {
+    constructor(name, cacheBufferSize = 65536) {
         this.name = name;
-        this.cache = new Cache();
+        this.cache = new Cache(cacheBufferSize);
     }
 
     /**
@@ -253,9 +253,11 @@ export class DB {
         let tableNames = this.showAllTableNames();
         let position = treeSearch(tableNames, tableName);
         if (position !== -1) {
+            
             let tableCopy = [...this.tables[position]];
             tableCopy[0] = tableCopy[0].slice(0, 1);
             return tableCopy;
+
         }
         return [['TABLE NOT FOUND!'], []];
     }
@@ -325,215 +327,163 @@ export class DB {
 
     }
 
-    /**
-    * @async
-    * @method delete
-    * @description Deletes rows from a specified table based on a condition.
-    * @param {Object} options - Options for deleting rows.
-    * @param {string} options.tableName - The name of the table.
-    * @param {string} [options.condition] - The column to use as a condition for deletion.
-    * @param {string|number} options.conditionValue - The value to compare with the condition column.
-    * @returns {Promise<boolean>|Array} True if the row or rows were successfully deleted, false if not; otherwise, it returns an array of arrays containing the error.
-    */
     async delete({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue }) {
-
         if (!this.intialized) {
             console.log('ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['ROW OR ROWS CANNOT BE DELETED!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
-
+    
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'TABLE NOT FOUND!') {
-            console.log('ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXISTS')
-            return [['ROW OR ROWS CANNOT BE DELETED!', 'TABLE ' + tableName + ' DOESN\'T EXISTS'], []]
+            console.log('ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST');
+            return [['ROW OR ROWS CANNOT BE DELETED!', 'TABLE ' + tableName + ' DOESN\'T EXIST'], []];
         }
-
+    
         let columnIndex = treeSearch(table[1], condition);
-
+    
         if (columnIndex === -1) {
-            console.log('ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN')
-            return [['ROW OR ROWS CANNOT BE DELETED!', 'CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []]
+            console.log('ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN');
+            return [['ROW OR ROWS CANNOT BE DELETED!', 'CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []];
         }
-
-        let columns = [];
-
+    
+        // Index the column values
+        let indexMap = new Map();
         for (let i = 2; i < table.length; i++) {
-            dbMethods.insert(columns, table[i][columnIndex]);
-        }
-
-        let elementExist = dbMethods.deleteAllByContent(columns, conditionValue);
-
-        if (elementExist) {
-            for (let i = table.length - 1; i >= 2; i--) {
-                const deleteElement = treeSearch(columns, table[i][columnIndex]);
-                if (deleteElement === -1) {
-                    console.log('DELETED ONE ROW WITH "' + table[1][columnIndex] + '" VALUE = "' + table[i][columnIndex] + '"')
-                    dbMethods.deleteByIndex(table, i);
-                    await this.save();
-                }
+            let value = table[i][columnIndex];
+            if (!indexMap.has(value)) {
+                indexMap.set(value, []);
             }
-
-            return true;
-        } else {
-            console.log('0 ROWS AFFECTED')
+            indexMap.get(value).push(i);
+        }
+    
+        if (!indexMap.has(conditionValue)) {
+            console.log('0 ROWS AFFECTED');
             return false;
         }
+    
+        let rowsToDelete = indexMap.get(conditionValue);
+    
+        // Delete rows
+        for (let i = rowsToDelete.length - 1; i >= 0; i--) {
+            let rowIndex = rowsToDelete[i];
+            console.log('DELETED ONE ROW WITH "' + table[1][columnIndex] + '" VALUE = "' + table[rowIndex][columnIndex] + '"');
+            dbMethods.deleteByIndex(table, rowIndex);
+        }
+    
+        await this.save();
+        return true;
     }
+    
 
-    /**
-    * @async
-    * @method update
-    * @description Updates rows in a specified table based on a condition.
-    * @param {Object} options - Options for updating rows.
-    * @param {string} options.tableName - The name of the table.
-    * @param {Array} [options.set] - An array of columns to update.
-    * @param {Array} [options.setValues] - An array of values corresponding to the set columns.
-    * @param {string} [options.condition] - The column to use as a condition for updating.
-    * @param {string|number} options.conditionValue - The value to compare with the condition column.
-    * @returns {Promise<boolean>|Array} True if the row or rows were successfully updated; otherwise, it returns an array of arrays containing the error.
-    */
     async update({ tableName, set = [this.getOneTable(tableName)[1][0]], setValues, condition = this.getOneTable(tableName)[1][0], conditionValue }) {
         if (!this.intialized) {
-            console.log('ROW OR ROWS NOT UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['ROW OR ROWS NOT UODATED!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            console.log('DATABASE "' + this.name + '" NOT INITIALIZED');
+            return [['DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
+    
         let table = this.getOneTable(tableName);
-        let columnsIndexes = [];
-
-        for (let i = 0; i < set.length; i++) {
-            dbMethods.insert(columnsIndexes, treeSearch(table[1], set[i]));
-
-            if (columnsIndexes[i] === -1) {
-                console.log('ROW OR ROWS NOT UPDATED! CONDITION "' + set[i] + '" IS NOT A VALID COLUMN');
-                return [['ROW OR ROWS NOT UPDATED!', 'CONDITION ' + set[i] + ' IS NOT A VALID COLUMN'], []];
-            }
-        }
-
         if (table[0][0] === 'TABLE NOT FOUND!') {
-            console.log('ROW OR ROWS NOT UPDATED! TABLE "' + tableName + '" DOESN\'T EXISTS');
-            return [['ROW OR ROWS NOT UPDATED!', 'TABLE ' + tableName + ' DOESN\'T EXISTS'], []];
+            console.log('TABLE "' + tableName + '" DOESN\'T EXIST');
+            return [['TABLE ' + tableName + ' DOESN\'T EXIST'], []];
         }
-
-        let columns = [];
-
+    
+        // Index the set columns
+        let setIndexes = [];
         for (let i = 0; i < set.length; i++) {
-            columns[i] = [];
-            for (let j = 2; j < table.length; j++) {
-                if (columnsIndexes[i] < table[j].length) {
-                    dbMethods.insert(columns[i], table[j][columnsIndexes[i]]);
-                }
+            let index = treeSearch(table[1], set[i]);
+            if (index === -1) {
+                console.log('CONDITION "' + set[i] + '" IS NOT A VALID COLUMN');
+                return [['CONDITION ' + set[i] + ' IS NOT A VALID COLUMN'], []];
+            }
+            setIndexes.push(index);
+        }
+    
+        // Index the condition column
+        let conditionIndex = treeSearch(table[1], condition);
+        if (conditionIndex === -1) {
+            console.log('CONDITION "' + condition + '" IS NOT A VALID COLUMN');
+            return [['CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []];
+        }
+    
+        // Find rows that match the condition
+        let rowsToUpdate = [];
+        for (let i = 2; i < table.length; i++) {
+            if (table[i][conditionIndex] === conditionValue) {
+                rowsToUpdate.push(i);
             }
         }
+    
         if (setValues && setValues.length === set.length) {
-            for (let i = 2; i < table.length; i++) {
-                const conditionIndex = table[1].indexOf(condition);
-                if (conditionIndex !== -1 && table[i][conditionIndex] === conditionValue) {
-                    for (let j = 0; j < set.length; j++) {
-                        const updateElement = treeSearch(columns[j], table[i][columnsIndexes[j]]);
-                        if (updateElement !== -1) {
-                            table[i][columnsIndexes[j]] = setValues[j];
-                            await this.save();
-                        }
-                    }
+            // Update rows
+            for (let i = 0; i < rowsToUpdate.length; i++) {
+                let rowIndex = rowsToUpdate[i];
+                for (let j = 0; j < set.length; j++) {
+                    table[rowIndex][setIndexes[j]] = setValues[j];
                 }
+                console.log('UPDATED ELEMENT WITH (' + JSON.stringify(set) + ') VALUES (' + JSON.stringify(setValues) + ")");
             }
+            await this.save();
         }
-
+    
         return true;
-
     }
 
-    /**
-   * @method find
-   * @description Finds rows in a specified table based on a condition.
-   * @param {Object} options - Options for finding rows.
-   * @param {string} options.tableName - The name of the table.
-   * @param {string} [options.condition] - The column to use as a condition for finding rows.
-   * @param {string|number} options.conditionValue - The value to compare with the condition column.
-   * @param {number} [options.limit] - The maximum number of rows to retrieve.
-   * @returns {Array} The specified rows in the specified table based on a condition.
-   */
-    find({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue, limit }) {
+    async find({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue, limit }) {
         if (!this.intialized) {
-            console.log('ROW OR ROWS NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['ROW OR ROWS NOT FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            console.log('DATABASE "' + this.name + '" NOT INITIALIZED');
+            return [['DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
+    
         let table = this.getOneTable(tableName);
-        if (limit === undefined || limit > table.length - 2) {
-            limit = table.length - 2;
-        }
         if (table[0][0] === 'TABLE NOT FOUND!') {
-            console.log('ROW OR ROWS NOT FOUND! TABLE "' + tableName + '" DOESN\'T EXISTS')
-            return [['ROW OR ROWS NOT FOUND!', 'TABLE ' + tableName + ' DOESN\'T EXISTS'], []]
+            console.log('TABLE "' + tableName + '" DOESN\'T EXIST');
+            return [['TABLE ' + tableName + ' DOESN\'T EXIST'], []];
         }
-
+    
         let columnIndex = treeSearch(table[1], condition);
-
+    
         if (columnIndex === -1) {
-            console.log('ROW OR ROWS NOT FOUND! CONDITION "' + condition + '" IS NOT A VALID COLUMN')
-            return [['ROW OR ROWS NOT FOUND!', 'CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []]
+            console.log('CONDITION "' + condition + '" IS NOT A VALID COLUMN');
+            return [['CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []];
         }
-
-        // No hay errores, comienza la búsqueda
-
-        // Creamos la cache key para identificar cada búsqueda
-
-        const cacheKey = `${tableName}_${condition}_${conditionValue}_${limit}`;
-
-        // Si la búsqueda está cacheada la devolvemos
-
-        if (this.cache.has(cacheKey)) {
-
-            console.log("Respuesta cacheada");
-
-            return this.cache.get(cacheKey);
-
-        } else {
-
-            let columns = [];
-
-            for (let i = 2; i < table.length; i++) {
-                dbMethods.insert(columns, table[i][columnIndex]);
+    
+        // Index the column values
+        let indexMap = new Map();
+        for (let i = 2; i < table.length; i++) {
+            let value = table[i][columnIndex];
+            if (!indexMap.has(value)) {
+                indexMap.set(value, []);
             }
-
-            let values = [];
-
-            for (let i = 0; i < table[1].length; i++) {
-
-                dbMethods.insert(values, table[1][i]);
-
-            }
-
-            let rows = [[table[0][0]], values];
-
-            let elementExist = dbMethods.deleteAllByContent(columns, conditionValue);
-
-            let inserts = 0;
-
-            if (elementExist) {
-                for (let i = 2; i < table.length; i++) {
-                    const foundElement = treeSearch(columns, table[i][columnIndex]);
-                    if (inserts === limit) {
-                        break;
-                    }
-                    if (foundElement === -1) {
-                        dbMethods.insert(rows, table[i]);
-                        inserts++;
-                    }
-                }
-
-            } else {
-                console.log('ROW OR ROWS NOT FOUND!')
-                return [['ROW OR ROWS NOT FOUND!'], []]
-            }
-
-            this.cache[cacheKey] = rows;
-
-            return rows;
+            indexMap.get(value).push(i);
         }
-
+    
+        if (!indexMap.has(conditionValue)) {
+            console.log('ROW OR ROWS NOT FOUND!');
+            return [['ROW OR ROWS NOT FOUND!'], []];
+        }
+    
+        let rows = indexMap.get(conditionValue);
+    
+        // Apply limit if provided
+        if (limit && limit < rows.length) {
+            rows = rows.slice(0, limit);
+        }
+    
+        let result = [];
+    
+        // Retrieve rows
+        for (let i = 0; i < rows.length; i++) {
+            let rowIndex = rows[i];
+            let row = [];
+            for (let j = 0; j < table[rowIndex].length; j++) {
+                row.push(table[rowIndex][j]);
+            }
+            result.push(row);
+        }
+    
+        return [[tableName], table[1], ...result];
     }
-
+    
     /**
     * @async
     * @method save
