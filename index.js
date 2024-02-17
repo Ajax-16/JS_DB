@@ -210,7 +210,7 @@ export class DB {
     * @description Retrieves all tables with shortened names for display.
     * @returns {Array} An array of tables with shortened names.
     */
-    showAllTables() {
+    async showAllTables() {
         if (!this.intialized) {
             console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['ANY TABLES FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
@@ -245,7 +245,7 @@ export class DB {
     * @param {string} tableName - The name of the table to retrieve.
     * @returns {Array} An array representing the specified table with a shortened name.
     */
-    showOneTable(tableName) {
+    async showOneTable(tableName) {
         if (!this.intialized) {
             console.log('TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['TABLE NOT FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
