@@ -1,8 +1,9 @@
 import dbMethods from './algorithms/array_methods.js';
 import { treeSearch } from './algorithms/tree_search.js';
+import { Cache } from './utils/cache.js';
 import { promises as fs } from 'fs';
 import { fileURLToPath } from 'url';
-import path, { dirname, resolve } from 'path';
+import path, { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,11 +38,17 @@ export class DB {
     intialized = false;
 
     /**
+    * @property {Cache}
+    */
+    cache;
+
+    /**
     * @constructor
     * @param {string} name - The name of the database.
     */
     constructor(name) {
         this.name = name;
+        this.cache = new Cache();
     }
 
     /**
@@ -329,33 +336,33 @@ export class DB {
     * @returns {Promise<boolean>|Array} True if the row or rows were successfully deleted, false if not; otherwise, it returns an array of arrays containing the error.
     */
     async delete({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue }) {
-        
+
         if (!this.intialized) {
             console.log('ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['ROW OR ROWS CANNOT BE DELETED!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
-        
+
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'TABLE NOT FOUND!') {
             console.log('ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXISTS')
             return [['ROW OR ROWS CANNOT BE DELETED!', 'TABLE ' + tableName + ' DOESN\'T EXISTS'], []]
         }
-    
+
         let columnIndex = treeSearch(table[1], condition);
-    
+
         if (columnIndex === -1) {
             console.log('ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN')
             return [['ROW OR ROWS CANNOT BE DELETED!', 'CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []]
         }
-    
+
         let columns = [];
-    
+
         for (let i = 2; i < table.length; i++) {
             dbMethods.insert(columns, table[i][columnIndex]);
         }
-    
+
         let elementExist = dbMethods.deleteAllByContent(columns, conditionValue);
-    
+
         if (elementExist) {
             for (let i = table.length - 1; i >= 2; i--) {
                 const deleteElement = treeSearch(columns, table[i][columnIndex]);
@@ -365,7 +372,7 @@ export class DB {
                     await this.save();
                 }
             }
-    
+
             return true;
         } else {
             console.log('0 ROWS AFFECTED')
@@ -467,44 +474,63 @@ export class DB {
             return [['ROW OR ROWS NOT FOUND!', 'CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []]
         }
 
-        let columns = [];
+        // No hay errores, comienza la búsqueda
 
-        for (let i = 2; i < table.length; i++) {
-            dbMethods.insert(columns, table[i][columnIndex]);
-        }
+        // Creamos la cache key para identificar cada búsqueda
 
-        let values = [];
+        const cacheKey = `${tableName}_${condition}_${conditionValue}_${limit}`;
 
-        for (let i = 0; i < table[1].length; i++) {
+        // Si la búsqueda está cacheada la devolvemos
 
-            dbMethods.insert(values, table[1][i]);
+        if (this.cache.has(cacheKey)) {
 
-        }
+            console.log("Respuesta cacheada");
 
-        let rows = [[table[0][0]], values];
-
-        let elementExist = dbMethods.deleteAllByContent(columns, conditionValue);
-
-        let inserts = 0;
-
-        if (elementExist) {
-            for (let i = 2; i < table.length; i++) {
-                const foundElement = treeSearch(columns, table[i][columnIndex]);
-                if (inserts === limit) {
-                    break;
-                }
-                if (foundElement === -1) {
-                    dbMethods.insert(rows, table[i]);
-                    inserts++;
-                }
-            }
+            return this.cache.get(cacheKey);
 
         } else {
-            console.log('ROW OR ROWS NOT FOUND!')
-            return [['ROW OR ROWS NOT FOUND!'], []]
-        }
 
-        return rows;
+            let columns = [];
+
+            for (let i = 2; i < table.length; i++) {
+                dbMethods.insert(columns, table[i][columnIndex]);
+            }
+
+            let values = [];
+
+            for (let i = 0; i < table[1].length; i++) {
+
+                dbMethods.insert(values, table[1][i]);
+
+            }
+
+            let rows = [[table[0][0]], values];
+
+            let elementExist = dbMethods.deleteAllByContent(columns, conditionValue);
+
+            let inserts = 0;
+
+            if (elementExist) {
+                for (let i = 2; i < table.length; i++) {
+                    const foundElement = treeSearch(columns, table[i][columnIndex]);
+                    if (inserts === limit) {
+                        break;
+                    }
+                    if (foundElement === -1) {
+                        dbMethods.insert(rows, table[i]);
+                        inserts++;
+                    }
+                }
+
+            } else {
+                console.log('ROW OR ROWS NOT FOUND!')
+                return [['ROW OR ROWS NOT FOUND!'], []]
+            }
+
+            this.cache[cacheKey] = rows;
+
+            return rows;
+        }
 
     }
 
@@ -576,8 +602,8 @@ export async function describeDatabase(currentDb, dbName) {
     await newDb.init();
 
     let dbDesc = newDb.showAllTableNames();
-    
-    if(currentDb instanceof DB){
+
+    if (currentDb instanceof DB) {
         currentDb.init();
     }
 
@@ -594,15 +620,15 @@ function getDbFolder() {
 async function getFilePath(dbName) {
     const dbFolder = getDbFolder();
 
-try {
-    await fs.access(dbFolder);
-} catch (error) {
-    if (error.code === 'ENOENT') {
-        await fs.mkdir(dbFolder, { recursive: true });
-    } else {
-        throw error;
+    try {
+        await fs.access(dbFolder);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            await fs.mkdir(dbFolder, { recursive: true });
+        } else {
+            throw error;
+        }
     }
-}
 
     return path.join(dbFolder, `${dbName}_db.json`);
 }
