@@ -365,48 +365,49 @@ export class DB {
     
         // Delete rows
         for (let i = rowsToDelete.length - 1; i >= 0; i--) {
-            let rowIndex = rowsToDelete[i];
-            console.log('DELETED ONE ROW WITH "' + table[1][columnIndex] + '" VALUE = "' + table[rowIndex][columnIndex] + '"');
+            let rowIndex = rowsToDelete[i];            
             dbMethods.deleteByIndex(table, rowIndex);
         }
+
+        console.log(`DELETED ${rowsToDelete.length} ROW(S) WITH ${condition} VALUE = ${conditionValue}`);
     
         await this.save();
         return true;
     }
     
 
-    async update({ tableName, set = [this.getOneTable(tableName)[1][0]], setValues, condition = this.getOneTable(tableName)[1][0], conditionValue }) {
+    async update({ tableName, set = [], setValues, condition, conditionValue }) {
         if (!this.intialized) {
-            console.log('DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            console.log('ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED');
+            return [['ROW OR ROWS CANNOT BE UPDATED!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
     
-        let table = this.getOneTable(tableName);
-        if (table[0][0] === 'TABLE NOT FOUND!') {
-            console.log('TABLE "' + tableName + '" DOESN\'T EXIST');
-            return [['TABLE ' + tableName + ' DOESN\'T EXIST'], []];
+        const table = this.getOneTable(tableName);
+        if (!table) {
+            console.log('ROW OR ROWS CANNOT BE UPDATED! TABLE "' + tableName + '" DOESN\'T EXIST');
+            return [['ROW OR ROWS CANNOT BE UPDATED!', 'TABLE ' + tableName + ' DOESN\'T EXIST'], []];
         }
     
-        // Index the set columns
-        let setIndexes = [];
-        for (let i = 0; i < set.length; i++) {
-            let index = treeSearch(table[1], set[i]);
-            if (index === -1) {
-                console.log('CONDITION "' + set[i] + '" IS NOT A VALID COLUMN');
-                return [['CONDITION ' + set[i] + ' IS NOT A VALID COLUMN'], []];
+        const columnIndexes = {};
+        table[1].forEach((column, index) => {
+            columnIndexes[column] = index;
+        });
+    
+        const conditionIndex = columnIndexes[condition];
+        if (conditionIndex === undefined) {
+            console.log('ROW OR ROWS CANNOT BE UPDATED! CONDITION "' + condition + '" IS NOT A VALID COLUMN');
+            return [['ROW OR ROWS CANNOT BE UPDATED!', 'CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []];
+        }
+    
+        const setIndexes = set.map(column => {
+            const index = columnIndexes[column];
+            if (index === undefined) {
+                console.log('ROW OR ROWS CANNOT BE UPDATED! CONDITION "' + condition + '" IS NOT A VALID COLUMN');
             }
-            setIndexes.push(index);
-        }
+            return index;
+        });
     
-        // Index the condition column
-        let conditionIndex = treeSearch(table[1], condition);
-        if (conditionIndex === -1) {
-            console.log('CONDITION "' + condition + '" IS NOT A VALID COLUMN');
-            return [['CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []];
-        }
-    
-        // Find rows that match the condition
-        let rowsToUpdate = [];
+        const rowsToUpdate = [];
         for (let i = 2; i < table.length; i++) {
             if (table[i][conditionIndex] === conditionValue) {
                 rowsToUpdate.push(i);
@@ -414,14 +415,12 @@ export class DB {
         }
     
         if (setValues && setValues.length === set.length) {
-            // Update rows
-            for (let i = 0; i < rowsToUpdate.length; i++) {
-                let rowIndex = rowsToUpdate[i];
+            for (const rowIndex of rowsToUpdate) {
                 for (let j = 0; j < set.length; j++) {
                     table[rowIndex][setIndexes[j]] = setValues[j];
                 }
-                console.log('UPDATED ELEMENT WITH (' + JSON.stringify(set) + ') VALUES (' + JSON.stringify(setValues) + ")");
             }
+            console.log(`UPDATED ${rowsToUpdate.length} ROW(S) WITH (${JSON.stringify(set)}) VALUES (${JSON.stringify(setValues)})`);
             await this.save();
         }
     
