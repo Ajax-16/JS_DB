@@ -30,12 +30,12 @@ export class DB {
     /**
     * @property {Array} keywords - An array of keywords used for checking table names.
     */
-    keywords = ['TABLE NOT FOUND!', 'TABLE CANNOT BE CREATED!', 'ROW CANNOT BE CREATED!', 'ROW OR ROWS CANNOT BE DELETED!', 'ROW OR ROWS NOT FOUND!', 'ROW OR ROWS NOT FOUND!, ANY TABLES FOUND!']
+    keywords = ['EXCEPTION ENCOUNTER']
 
     /**
-    * @property {boolean} intialized - Indicates whether the database has been initialized.
+    * @property {boolean} initialized - Indicates whether the database has been initialized.
     */
-    intialized = false;
+    initialized = false;
 
     /**
     * @property {Cache}
@@ -62,14 +62,14 @@ export class DB {
             this.filePath = await getFilePath(this.name);
             const fileContent = await fs.readFile(this.filePath, 'utf8');
             this.tables = JSON.parse(fileContent);
-            this.intialized = true;
+            this.initialized = true;
         } catch (readError) {
             this.tables = [];
 
             try {
                 await fs.writeFile(this.filePath, '');
                 console.log('DATABASE CREATED SUCCESSFULY');
-                this.intialized = true;
+                this.initialized = true;
             } catch (writeError) {
                 console.error('ERROR WRITING ON DATABASE:', writeError);
             }
@@ -88,16 +88,16 @@ export class DB {
    */
     async createTable({ tableName, primaryKey, columns }) {
 
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['TABLE CANNOT BE CREATED!', 'DATABASE ' + this.name + ' NOT INITIALIZED'], []];
+            return [['EXCEPTION ENCOUNTER'], ['TABLE CANNOT BE CREATED! DATABASE ' + this.name + ' NOT INITIALIZED']];
         }
 
         let tableExist = this.getOneTable(tableName);
 
-        if (tableExist[0][0] !== 'TABLE NOT FOUND!') {
-            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. TABLE NAME = "' + tableName + '" IS ALREADY CREATED');
-            return [['TABLE CANNOT BE CREATED!', 'NAME ' + tableName + ' ALREADY IN USE'], []];
+        if (tableExist[0][0] !== 'EXCEPTION ENCOUNTER') {
+            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. TABLE NAME "' + tableName + '" IS ALREADY CREATED');
+            return [['EXCEPTION ENCOUNTER'], ['TABLE CANNOT BE CREATED! TABLE NAME ' + tableName + ' ALREADY IN USE']];
         }
 
         if (tableName === undefined) {
@@ -115,8 +115,8 @@ export class DB {
         let isKeyWord = treeSearch(this.keywords, tableName);
 
         if (isKeyWord !== -1) {
-            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. TABLE_NAME = "' + tableName + '" IS A KEYWORD');
-            return [['TABLE CANNOT BE CREATED!', 'NAME "' + tableName + '" IS A KEYWORD'], []];
+            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. TABLE NAME "' + tableName + '" IS A KEYWORD');
+            return [['EXCEPTION ENCOUNTER'], ['TABLE CANNOT BE CREATED! TABLE NAME "' + tableName + '" IS A KEYWORD']];
         }
 
         let table = [[], []];
@@ -150,7 +150,7 @@ export class DB {
     */
     async dropTable(tableName) {
 
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('TABLE WITH NAME "' + tableName + '" COULD NOT BE DROPPED!. DATABASE "' + this.name + '" NOT INITIALIZED');
             return false;
         }
@@ -182,9 +182,9 @@ export class DB {
     * @returns {Array} An array containing all tables.
     */
     getAllTables() {
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['ANY TABLES FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
         return this.tables;
     }
@@ -196,16 +196,16 @@ export class DB {
     * @returns {Array} An array representing the specified table.
     */
     getOneTable(tableName) {
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['TABLE NOT FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
         let tableNames = this.showAllTableNames();
         let position = treeSearch(tableNames, tableName);
         if (position !== -1) {
             return this.tables[position];
         }
-        return [['TABLE NOT FOUND!'], []];
+        return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND!']];
     }
 
     /**
@@ -214,9 +214,9 @@ export class DB {
     * @returns {Array} An array of tables with shortened names.
     */
     async showAllTables() {
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['ANY TABLES FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
         let tablesCopy = [...this.tables];
         for (let i = 0; i < tablesCopy.length; i++) {
@@ -231,9 +231,9 @@ export class DB {
     * @returns {Array} An array containing the name of all tables.
     */
     showAllTableNames() {
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['ANY TABLES FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
         let tableNames = [];
         for (let i = 0; i < this.tables.length; i++) {
@@ -248,21 +248,29 @@ export class DB {
     * @param {string} tableName - The name of the table to retrieve.
     * @returns {Array} An array representing the specified table with a shortened name.
     */
-    async showOneTable(tableName) {
-        if (!this.intialized) {
-            console.log('TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['TABLE NOT FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+    async showOneTable(tableName, offset = 0, limit) {
+        if (!this.initialized) {
+            console.log('DATABASE "' + this.name + '" NOT INITIALIZED');
+            return [['EXCEPTION ENCOUNTER'],['DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
-        let tableNames = this.showAllTableNames();
-        let position = treeSearch(tableNames, tableName);
+    
+        const tableNames = this.showAllTableNames();
+        const position = treeSearch(tableNames, tableName);
         if (position !== -1) {
-            
             let tableCopy = [...this.tables[position]];
-            tableCopy[0] = tableCopy[0].slice(0, 1);
+            tableCopy[0] = tableCopy[0].slice(0, 1); // Copia solo los encabezados
+    
+            // Aplicar offset y limit si se proporcionan
+            if (limit !== undefined) {
+                tableCopy = tableCopy.slice(offset, offset + limit);
+            } else if (offset > 0) {
+                tableCopy = tableCopy.slice(offset);
+            }
+    
             return tableCopy;
-
         }
-        return [['TABLE NOT FOUND!'], []];
+    
+        return [['EXCEPTION ENCOUNTER'],['TABLE NOT FOUND!']];
     }
 
     /**
@@ -272,9 +280,9 @@ export class DB {
     * @returns {Array} An array containing information about the specified table.
     */
     describeOneTable(tableName) {
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['TABLE NOT FOUND!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
         let tableNames = this.showAllTableNames();
         let position = treeSearch(tableNames, tableName);
@@ -284,10 +292,8 @@ export class DB {
             dbMethods.insert(tableDesc, this.tables[position][1]);
             return tableDesc;
         }
-        return [['TABLE NOT FOUND!'], []];
+        return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND!']];
     }
-
-
 
     /**
     * @async
@@ -299,19 +305,19 @@ export class DB {
     * @returns {Promise<boolean>|Array} True if the row was successfully inserted; otherwise, it returns an array of arrays containing the error.
     */
     async insert({ tableName, values }) {
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('ROW CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['ROW CANNOT BE CREATED!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
         let table = this.getOneTable(tableName);
-        if (table[0][0] === 'TABLE NOT FOUND!') {
+        if (table[0][0] === 'EXCEPTION ENCOUNTER') {
             console.log('ROW CANNOT BE CREATED! TABLE "' + tableName + '" DOESN\'T EXISTS');
-            return [['ROW CANNOT BE CREATED!', 'TABLE ' + tableName + ' DOESN\'T EXISTS'], []]
+            return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! TABLE "' + tableName + '" DOESN\'T EXISTS']]
         }
         let limitOnValues = table[1].length - 1;
         if (values.length < limitOnValues) {
             console.log('ROW CANNOT BE CREATED! SOME OF THE VALUES ARE NULL')
-            return [['ROW CANNOT BE CREATED!', 'SOME OF THE VALUES ARE NULL'], []]
+            return [['EXCETION ENCOUNTER'], ['ROW CANNOT BE CREATED! SOME OF THE VALUES ARE NULL']]
         }
         let row = [table[0][1]];
         for (let i = 0; i < limitOnValues; i++) {
@@ -331,22 +337,22 @@ export class DB {
     }
 
     async delete({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue }) {
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['ROW OR ROWS CANNOT BE DELETED!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
     
         let table = this.getOneTable(tableName);
-        if (table[0][0] === 'TABLE NOT FOUND!') {
+        if (table[0][0] === 'EXCEPTION ENCOUNTER') {
             console.log('ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST');
-            return [['ROW OR ROWS CANNOT BE DELETED!', 'TABLE ' + tableName + ' DOESN\'T EXIST'], []];
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST']];
         }
     
         let columnIndex = treeSearch(table[1], condition);
     
         if (columnIndex === -1) {
             console.log('ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN');
-            return [['ROW OR ROWS CANNOT BE DELETED!', 'CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []];
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN']];
         }
     
         // Index the column values
@@ -360,7 +366,7 @@ export class DB {
         }
     
         if (!indexMap.has(conditionValue)) {
-            console.log('0 ROWS AFFECTED');
+            console.log('0 ROWS DELETED');
             return false;
         }
     
@@ -380,15 +386,15 @@ export class DB {
     
 
     async update({ tableName, set = [], setValues, condition, conditionValue }) {
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['ROW OR ROWS CANNOT BE UPDATED!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
     
         const table = this.getOneTable(tableName);
-        if (!table) {
+        if (table[0][0] === 'EXCEPTION ENCOUNTER') {
             console.log('ROW OR ROWS CANNOT BE UPDATED! TABLE "' + tableName + '" DOESN\'T EXIST');
-            return [['ROW OR ROWS CANNOT BE UPDATED!', 'TABLE ' + tableName + ' DOESN\'T EXIST'], []];
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! TABLE "' + tableName + '" DOESN\'T EXIST']];
         }
     
         const columnIndexes = {};
@@ -399,7 +405,7 @@ export class DB {
         const conditionIndex = columnIndexes[condition];
         if (conditionIndex === undefined) {
             console.log('ROW OR ROWS CANNOT BE UPDATED! CONDITION "' + condition + '" IS NOT A VALID COLUMN');
-            return [['ROW OR ROWS CANNOT BE UPDATED!', 'CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []];
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! CONDITION "' + condition + '" IS NOT A VALID COLUMN']];
         }
     
         const setIndexes = set.map(column => {
@@ -416,14 +422,20 @@ export class DB {
                 rowsToUpdate.push(i);
             }
         }
+
+        let totalUpdated = 0;
     
         if (setValues && setValues.length === set.length) {
             for (const rowIndex of rowsToUpdate) {
                 for (let j = 0; j < set.length; j++) {
-                    table[rowIndex][setIndexes[j]] = setValues[j];
+                    if(table[rowIndex][setIndexes[j]] !== setValues[j]){
+                        table[rowIndex][setIndexes[j]] = setValues[j];
+                        totalUpdated++;
+                    }
                 }
             }
-            console.log(`UPDATED ${rowsToUpdate.length} ROW(S) WITH (${JSON.stringify(set)}) VALUES (${JSON.stringify(setValues)})`);
+            let finalMsg = totalUpdated ? `UPDATED ${totalUpdated} ROW(S) WITH (${JSON.stringify(set)}) VALUES (${JSON.stringify(setValues)})` : '0 ROWS UPDATED'
+            console.log(finalMsg);
             await this.save();
         }
     
@@ -431,22 +443,22 @@ export class DB {
     }
 
     async find({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue, offset = 0, limit }) {
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
     
         let table = this.getOneTable(tableName);
-        if (table[0][0] === 'TABLE NOT FOUND!') {
+        if (table[0][0] === 'EXCEPTION ENCOUNTER') {
             console.log('TABLE "' + tableName + '" DOESN\'T EXIST');
-            return [['TABLE ' + tableName + ' DOESN\'T EXIST'], []];
+            return [['EXCEPTION ENCOUNTER'], ['TABLE ' + tableName + ' DOESN\'T EXIST']];
         }
     
         let columnIndex = treeSearch(table[1], condition);
     
         if (columnIndex === -1) {
             console.log('CONDITION "' + condition + '" IS NOT A VALID COLUMN');
-            return [['CONDITION ' + condition + ' IS NOT A VALID COLUMN'], []];
+            return [['EXCEPTION ENCOUNTER'], ['CONDITION "' + condition + '" IS NOT A VALID COLUMN']];
         }
     
         // Index the column values
@@ -461,7 +473,7 @@ export class DB {
     
         if (!indexMap.has(conditionValue)) {
             console.log('ROW OR ROWS NOT FOUND!');
-            return [['ROW OR ROWS NOT FOUND!'], []];
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS NOT FOUND!']];
         }
     
         let rows = indexMap.get(conditionValue);
@@ -496,9 +508,9 @@ export class DB {
     * @returns {Promise<void>}
     */
     async save() {
-        if (!this.intialized) {
+        if (!this.initialized) {
             console.log('YOU CAN\'T SAVE! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['YOU CAN\'T SAVE!'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['YOU CAN\'T SAVE! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
         await fs.writeFile(this.filePath, JSON.stringify(this.tables, null, 2));
     }
@@ -548,8 +560,8 @@ export async function describeDatabase(currentDb, dbName) {
     let dbNamePos = treeSearch(databases, dbName);
 
     if (dbNamePos === -1) {
-        console.log('DATABASE NOT FOUND!')
-        return [['DATABASE NOT FOUND!'], ['DATABASE "' + dbName + '" DO NOT EXIST!']];
+        console.log('DATABASE "' + dbName + '" DO NOT EXIST!')
+        return [['EXCEPTION ENCOUNTER'], ['DATABASE NOT FOUND! DATABASE "' + dbName + '" DO NOT EXIST!']];
     }
 
     let newDb = new DB(databases[dbNamePos]);
