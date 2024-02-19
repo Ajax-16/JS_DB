@@ -104,8 +104,11 @@ export class DB {
             tableName = 'table';
         }
 
-        if (primaryKey === undefined || columns === undefined) {
+        if (primaryKey === undefined) {
             primaryKey = 'id';
+        }
+
+        if (columns === undefined) {
             columns = [];
         }
 
@@ -427,7 +430,7 @@ export class DB {
         return true;
     }
 
-    async find({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue, limit }) {
+    async find({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue, offset = 0, limit }) {
         if (!this.intialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['DATABASE "' + this.name + '" NOT INITIALIZED']];
@@ -463,21 +466,24 @@ export class DB {
     
         let rows = indexMap.get(conditionValue);
     
-        // Apply limit if provided
-        if (limit && limit < rows.length) {
-            rows = rows.slice(0, limit);
+        let result = [];
+
+        if(offset > rows.length) {
+            return [[tableName], table[1]];
         }
     
-        let result = [];
-    
         // Retrieve rows
-        for (let i = 0; i < rows.length; i++) {
+        for (let i = offset; i < rows.length; i++) {
             let rowIndex = rows[i];
             let row = [];
             for (let j = 0; j < table[rowIndex].length; j++) {
                 row.push(table[rowIndex][j]);
             }
             result.push(row);
+        }
+
+        if (limit && limit < rows.length) {
+            result = result.slice(0, limit);
         }
     
         return [[tableName], table[1], ...result];
