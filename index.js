@@ -258,21 +258,27 @@ export class DB {
         const position = treeSearch(tableNames, tableName);
         if (position !== -1) {
             let tableCopy = [...this.tables[position]];
-            tableCopy[0] = tableCopy[0].slice(0, 1); // Copia solo los encabezados
+            tableCopy[0] = tableCopy[0].slice(0, 1);
     
-            // Aplicar offset y limit si se proporcionan
+            const tableHeaders = tableCopy.slice(0, 2);
+    
+            let dataRows = tableCopy.slice(2);
             if (limit !== undefined) {
-                tableCopy = tableCopy.slice(offset, offset + limit);
+                dataRows = dataRows.slice(offset, offset + limit);
             } else if (offset > 0) {
-                tableCopy = tableCopy.slice(offset);
+                dataRows = dataRows.slice(offset);
             }
-    
-            return tableCopy;
+
+            if(dataRows.length === 0) {
+                return tableHeaders
+            }
+            // Concatena las cabeceras con las filas de datos procesadas
+            return tableHeaders.concat(dataRows);
         }
     
         return [['EXCEPTION ENCOUNTER'],['TABLE NOT FOUND!']];
     }
-
+    
     /**
     * @method describeOneTable
     * @description Retrieves information about a specific table.
