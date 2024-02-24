@@ -266,6 +266,12 @@ export class DB {
         let tableCopy = [...this.tables[position]];
         tableCopy[0] = tableCopy[0].slice(0, 1);
         const tableHeaders = tableCopy.slice(0, 2);
+
+        for(let i = 0; i < columns.length; i++) {
+            if (!tableHeaders[1].includes(columns[i])) {
+                return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columns[i] + '" IS NOT A VALID COLUMN']];
+            }
+        }
     
         let dataRows = tableCopy.slice(2);
         if (limit !== undefined) {
