@@ -599,7 +599,7 @@ export async function describeDatabase(currentDb, dbName) {
         currentDb.init();
     }
 
-    return dbDesc.length > 0 ? dbDesc : [['EXCEPTION ENCOUNTER'], ['DATABASE HAS NO TABLES!']]
+    return dbDesc.length > 0 ? dbDesc : [['EXCEPTION ENCOUNTER'], ['DATABASE' + dbName + ' HAS NO TABLES!']]
 
 }
 
