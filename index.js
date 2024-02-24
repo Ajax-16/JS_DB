@@ -67,8 +67,10 @@ export class DB {
             this.tables = [];
 
             try {
-                await fs.writeFile(this.filePath, '');
-                console.log('DATABASE CREATED SUCCESSFULY');
+                await fs.writeFile(this.filePath, '[]');
+                if (await getDatabasePosition(this.name) === -1) {
+                    console.log('DATABASE CREATED SUCCESSFULY');
+                }
                 this.initialized = true;
             } catch (writeError) {
                 console.error('ERROR WRITING ON DATABASE:', writeError);
@@ -248,37 +250,44 @@ export class DB {
     * @param {string} tableName - The name of the table to retrieve.
     * @returns {Array} An array representing the specified table with a shortened name.
     */
-    async showOneTable(tableName, offset = 0, limit) {
+    showOneTable(tableName, columns = this.getOneTable(tableName)[1], offset = 0, limit) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['EXCEPTION ENCOUNTER'],['DATABASE "' + this.name + '" NOT INITIALIZED']];
+            return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
     
         const tableNames = this.showAllTableNames();
         const position = treeSearch(tableNames, tableName);
-        if (position !== -1) {
-            let tableCopy = [...this.tables[position]];
-            tableCopy[0] = tableCopy[0].slice(0, 1);
     
-            const tableHeaders = tableCopy.slice(0, 2);
-    
-            let dataRows = tableCopy.slice(2);
-            if (limit !== undefined) {
-                dataRows = dataRows.slice(offset, offset + limit);
-            } else if (offset > 0) {
-                dataRows = dataRows.slice(offset);
-            }
-
-            if(dataRows.length === 0) {
-                return tableHeaders
-            }
-            // Concatena las cabeceras con las filas de datos procesadas
-            return tableHeaders.concat(dataRows);
+        if (position === -1) {
+            return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND!']];
         }
     
-        return [['EXCEPTION ENCOUNTER'],['TABLE NOT FOUND!']];
+        let tableCopy = [...this.tables[position]];
+        tableCopy[0] = tableCopy[0].slice(0, 1);
+        const tableHeaders = tableCopy.slice(0, 2);
+    
+        let dataRows = tableCopy.slice(2);
+        if (limit !== undefined) {
+            dataRows = dataRows.slice(offset, offset + limit);
+        } else if (offset > 0) {
+            dataRows = dataRows.slice(offset);
+        }
+    
+        if (dataRows.length === 0) {
+            return tableHeaders;
+        }
+    
+        const selectedColumnsIndices = columns.map(column => tableHeaders[1].indexOf(column));
+        const selectedHeaders = selectedColumnsIndices.map(index => tableHeaders[1][index]);
+        const selectedTableHeaders = [tableHeaders[0], selectedHeaders];
+    
+        dataRows = dataRows.map(row => selectedColumnsIndices.map(index => row[index]));
+    
+        return selectedTableHeaders.concat(dataRows);
     }
     
+
     /**
     * @method describeOneTable
     * @description Retrieves information about a specific table.
@@ -347,20 +356,20 @@ export class DB {
             console.log('ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
-    
+
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'EXCEPTION ENCOUNTER') {
             console.log('ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST']];
         }
-    
+
         let columnIndex = treeSearch(table[1], condition);
-    
+
         if (columnIndex === -1) {
             console.log('ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN']];
         }
-    
+
         // Index the column values
         let indexMap = new Map();
         for (let i = 2; i < table.length; i++) {
@@ -370,50 +379,50 @@ export class DB {
             }
             indexMap.get(value).push(i);
         }
-    
+
         if (!indexMap.has(conditionValue)) {
             console.log('0 ROWS DELETED');
             return false;
         }
-    
+
         let rowsToDelete = indexMap.get(conditionValue);
-    
+
         // Delete rows
         for (let i = rowsToDelete.length - 1; i >= 0; i--) {
-            let rowIndex = rowsToDelete[i];            
+            let rowIndex = rowsToDelete[i];
             dbMethods.deleteByIndex(table, rowIndex);
         }
 
         console.log(`DELETED ${rowsToDelete.length} ROW(S) WITH ${condition} VALUE = ${conditionValue}`);
-    
+
         await this.save();
         return true;
     }
-    
+
 
     async update({ tableName, set = [], setValues, condition, conditionValue }) {
         if (!this.initialized) {
             console.log('ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
-    
+
         const table = this.getOneTable(tableName);
         if (table[0][0] === 'EXCEPTION ENCOUNTER') {
             console.log('ROW OR ROWS CANNOT BE UPDATED! TABLE "' + tableName + '" DOESN\'T EXIST');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! TABLE "' + tableName + '" DOESN\'T EXIST']];
         }
-    
+
         const columnIndexes = {};
         table[1].forEach((column, index) => {
             columnIndexes[column] = index;
         });
-    
+
         const conditionIndex = columnIndexes[condition];
         if (conditionIndex === undefined) {
             console.log('ROW OR ROWS CANNOT BE UPDATED! CONDITION "' + condition + '" IS NOT A VALID COLUMN');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! CONDITION "' + condition + '" IS NOT A VALID COLUMN']];
         }
-    
+
         const setIndexes = set.map(column => {
             const index = columnIndexes[column];
             if (index === undefined) {
@@ -421,7 +430,7 @@ export class DB {
             }
             return index;
         });
-    
+
         const rowsToUpdate = [];
         for (let i = 2; i < table.length; i++) {
             if (table[i][conditionIndex] === conditionValue) {
@@ -430,11 +439,11 @@ export class DB {
         }
 
         let totalUpdated = 0;
-    
+
         if (setValues && setValues.length === set.length) {
             for (const rowIndex of rowsToUpdate) {
                 for (let j = 0; j < set.length; j++) {
-                    if(table[rowIndex][setIndexes[j]] !== setValues[j]){
+                    if (table[rowIndex][setIndexes[j]] !== setValues[j]) {
                         table[rowIndex][setIndexes[j]] = setValues[j];
                         totalUpdated++;
                     }
@@ -444,11 +453,11 @@ export class DB {
             console.log(finalMsg);
             await this.save();
         }
-    
+
         return true;
     }
 
-    async find({ tableName, condition = this.getOneTable(tableName)[1][0], conditionValue, offset = 0, limit }) {
+    async find({ tableName, columns = this.getOneTable(tableName)[1], condition = this.getOneTable(tableName)[1][0], conditionValue, offset = 0, limit }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED']];
@@ -459,12 +468,18 @@ export class DB {
             console.log('TABLE "' + tableName + '" DOESN\'T EXIST');
             return [['EXCEPTION ENCOUNTER'], ['TABLE ' + tableName + ' DOESN\'T EXIST']];
         }
-    
+        
         let columnIndex = treeSearch(table[1], condition);
     
         if (columnIndex === -1) {
             console.log('CONDITION "' + condition + '" IS NOT A VALID COLUMN');
             return [['EXCEPTION ENCOUNTER'], ['CONDITION "' + condition + '" IS NOT A VALID COLUMN']];
+        }
+
+        for(let i = 0; i < columns.length; i++) {
+            if (!table[1].includes(columns[i])) {
+                return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columns[i] + '" IS NOT A VALID COLUMN']];
+            }
         }
     
         // Index the column values
@@ -485,28 +500,33 @@ export class DB {
         let rows = indexMap.get(conditionValue);
     
         let result = [];
-
-        if(offset > rows.length) {
-            return [[tableName], table[1]];
+    
+        if (offset > rows.length) {
+            return [[tableName], columns];
         }
     
-        // Retrieve rows
+        // Retrieve rows with selected columns
         for (let i = offset; i < rows.length; i++) {
             let rowIndex = rows[i];
             let row = [];
-            for (let j = 0; j < table[rowIndex].length; j++) {
-                row.push(table[rowIndex][j]);
+            for (let j = 0; j < columns.length; j++) {
+                let column = columns[j];
+                let columnIndex = treeSearch(table[1], column);
+                if (columnIndex !== -1) {
+                    row.push(table[rowIndex][columnIndex]);
+                }
             }
             result.push(row);
         }
-
+    
         if (limit && limit < rows.length) {
             result = result.slice(0, limit);
         }
     
-        return [[tableName], table[1], ...result];
+        return [[tableName], columns, ...result];
     }
     
+
     /**
     * @async
     * @method save
@@ -555,21 +575,14 @@ export async function dropDb(dbName) {
     */
 export async function describeDatabase(currentDb, dbName) {
 
-    let databases = [];
-
-    let files = await fs.readdir(getDbFolder());
-
-    files.forEach((file) => {
-        dbMethods.insert(databases, file.split('_').shift());
-    })
-
-    let dbNamePos = treeSearch(databases, dbName);
+    let dbNamePos = await getDatabasePosition(dbName);
 
     if (dbNamePos === -1) {
-        console.log('DATABASE "' + dbName + '" DO NOT EXIST!')
-        return [['EXCEPTION ENCOUNTER'], ['DATABASE NOT FOUND! DATABASE "' + dbName + '" DO NOT EXIST!']];
+        console.log('DATABASE "' + dbName + '" DOES NOT EXIST!')
+        return [['EXCEPTION ENCOUNTER'], ['DATABASE NOT FOUND! DATABASE "' + dbName + '" DOES NOT EXIST!']];
     }
 
+    let databases = await getAllDatabases();
     let newDb = new DB(databases[dbNamePos]);
 
     await newDb.init();
@@ -580,7 +593,8 @@ export async function describeDatabase(currentDb, dbName) {
         currentDb.init();
     }
 
-    return dbDesc;
+    return dbDesc.length > 0 ? dbDesc : [['EXCEPTION ENCOUNTER'], ['DATABASE HAS NO TABLES!']]
+
 }
 
 function getDbFolder() {
@@ -604,4 +618,14 @@ async function getFilePath(dbName) {
     }
 
     return path.join(dbFolder, `${dbName}_db.json`);
+}
+
+async function getAllDatabases() {
+    let files = await fs.readdir(getDbFolder());
+    return files.map(file => file.split('_')[0]);
+}
+
+async function getDatabasePosition(dbName) {
+    let databases = await getAllDatabases();
+    return treeSearch(databases, dbName);
 }
