@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 
 /**
  * @class DB
- * @description Represents a simple database with basic CRUD operations.
+ * @description Represents a reference to an Ajax Data Base.
  */
 export class DB {
 
@@ -43,9 +43,11 @@ export class DB {
     cache;
 
     /**
-    * @constructor
-    * @param {string} name - The name of the database.
-    */
+     * Creates an instance of DB.
+     * @constructor
+     * @param {string} name - The name of the database.
+     * @param {number} [cacheBufferSize=65536] - The size of the predefined cache buffer.
+     */
     constructor(name, cacheBufferSize = 65536) {
         this.name = name;
         this.cache = new Cache(cacheBufferSize);
@@ -245,35 +247,37 @@ export class DB {
     }
 
     /**
+    * @async
     * @method showOneTable
-    * @description Retrieves a specific table with a shortened name for display.
-    * @param {string} tableName - The name of the table to retrieve.
-    * @param {Array} columns - The columns of the table to display.
-    * @param {Number} offset - The name of the table to retrieve.
-    * @param {Number} limit - The name of the table to retrieve.
-    * @returns {Array} An array representing the specified table.
+    * @description Retrieves data from a specified table, allowing for column selection, distinct rows, offset, and limit.
+    * @param {string} tableName - The name of the table.
+    * @param {Boolean} [distinct=false] - Whether to retrieve distinct rows.
+    * @param {Array<String>} [columns=this.getOneTable(tableName)[1]] - The list of columns to retrieve. All columns by default.
+    * @param {number} [offset=0] - The starting index from which to retrieve rows. 0 by default.
+    * @param {number} limit - The maximum number of rows to retrieve.
+    * @returns {Promise<Array<Array<any>>>} An array containing the retrieved data, or an array indicating an exception encounter if the table is not found.
     */
     async showOneTable({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], offset = 0, limit }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
-    
+
         const tableNames = this.showAllTableNames();
         const position = treeSearch(tableNames, tableName);
-    
+
         if (position === -1) {
             return [['EXCEPTION ENCOUNTER'], ['TABLE "' + tableName + '" NOT FOUND!']];
         }
-    
+
         let tableCopy = [...this.tables[position]];
         tableCopy[0] = tableCopy[0].slice(0, 1);
         const tableHeaders = tableCopy.slice(0, 2);
-    
+
         // Filtrar las filas para incluir solo las columnas seleccionadas
         const selectedColumnIndices = columns.map(column => tableHeaders[1].indexOf(column));
         const filteredDataRows = tableCopy.slice(2).map(row => selectedColumnIndices.map(index => row[index]));
-    
+
         // Aplicar offset y limit si se especifican
         let dataRows = filteredDataRows;
         if (limit !== undefined) {
@@ -281,11 +285,11 @@ export class DB {
         } else if (offset > 0) {
             dataRows = dataRows.slice(offset);
         }
-    
+
         // Construir la respuesta final
         const selectedTableHeaders = [tableHeaders[0], columns];
         const result = [selectedTableHeaders[0], selectedTableHeaders[1], ...dataRows];
-    
+
         if (distinct !== false) {
             // Manejar la opción distinct si está activada
             const distinctRows = [];
@@ -299,7 +303,7 @@ export class DB {
             }
             return [selectedTableHeaders[0], selectedTableHeaders[1], ...distinctRows];
         }
-    
+
         return result;
     }
 
@@ -366,6 +370,16 @@ export class DB {
 
     }
 
+    /**
+    * @async
+    * @method delete
+    * @description Deletes rows from a specified table based on a given condition.
+    * @param {string} tableName - The name of the table.
+    * @param {string} [condition=this.getOneTable(tableName)[1][0]] - The column used as the condition for the delete operation. Primary key by default.
+    * @param {string} [operator='='] - The comparison operator for the condition. "=" by default.
+    * @param {any} conditionValue - The value used for the condition.
+    * @returns {Promise<boolean>} A boolean indicating whether the delete operation was successful or not.
+    */
     async delete({ tableName, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
         if (!this.initialized) {
             console.log('ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED!');
@@ -394,15 +408,29 @@ export class DB {
             console.log(`DELETED ${rows.length} ROW(S) WITH "${condition}" ${operator} "${conditionValue}"`);
 
             await this.save();
+
             return true;
 
         }
 
         console.log('0 ROWS DELETED');
+
         return false;
 
     }
 
+    /**
+    * @async
+    * @method update
+    * @description Updates rows in a specified table based on a given condition.
+    * @param {string} tableName - The name of the table.
+    * @param {Array<string>} set - The list of columns to be updated.
+    * @param {Array<any>} setValues - The new values for the columns to be updated.
+    * @param {string} condition - The column used as the condition for the update operation.
+    * @param {string} [operator='='] - The comparison operator for the condition. "=" by default.
+    * @param {any} conditionValue - The value used for the condition.
+    * @returns {Promise<boolean>} A boolean indicating whether the update operation was successful or not.
+    */
     async update({ tableName, set = [], setValues, condition, operator = '=', conditionValue }) {
         if (!this.initialized) {
             console.log('ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED!');
@@ -456,6 +484,20 @@ export class DB {
         return updated;
     }
 
+    /**
+    * @async
+    * @method find
+    * @description Retrieves rows from a specified table based on certain conditions.
+    * @param {string} tableName - The name of the table.
+    * @param {Boolean} [distinct=false] - Whether to retrieve distinct rows.
+    * @param {Array<String>} [columns=this.getOneTable(tableName)[1]] - The list of columns to retrieve. All columns by default.
+    * @param {string} [condition=this.getOneTable(tableName)[1][0]] - The column used as the condition for the search. Primary key by default.
+    * @param {string} [operator='='] - The comparison operator for the condition. "=" by default.
+    * @param {any} conditionValue - The value used for the condition.
+    * @param {number} [offset=0] - The starting index from which to retrieve rows. 0 by default.
+    * @param {number} limit - The maximum number of rows to retrieve.
+    * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
+    */
     async find({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue, offset = 0, limit }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
@@ -484,7 +526,7 @@ export class DB {
                 return [[tableName], columns];
             }
 
-            // Retrieve rows with selected columns
+            // Devuelve todas las filas de las columnas selceccionadas.
             for (let i = offset; i < rows.length; i++) {
                 let rowIndex = rows[i];
                 let row = [];
@@ -512,17 +554,20 @@ export class DB {
     /**
      * @async
      * @method findRowsByCondition
-     * @description Busca las filas que cumplen con cierta condición en una tabla.
-     * @param {string} tableName - El nombre de la tabla.
-     * @param {string} condition - La columna utilizada como condición.
-     * @param {any} conditionValue - El valor utilizado para la condición.
-     * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} Objeto con el índice de la columna y las filas que cumplen la condición.
+     * @description Searches for rows that meet a certain condition in a table.
+     * @param {string} tableName - The name of the table.
+     * @param {Boolean} distinct - Whether the search should disregard duplicates.
+     * @param {Array<String>} columns - The list of columns to be returned.
+     * @param {string} condition - The column used as a condition.
+     * @param {string} operator - The logical operator to filter the results.
+     * @param {any} conditionValue - The value used for the condition.
+     * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
     async findRowsByCondition({ tableName, distinct, columns = this.getOneTable(tableName)[1], condition, operator, conditionValue }) {
         const table = this.getOneTable(tableName);
         const columnIndex = treeSearch(table[1], condition);
 
-        // Indexar los valores de la columna
+        // Se indexan los valores de la columna especificada en la condición
         const indexMap = new Map();
         for (let i = 2; i < table.length; i++) {
             const value = table[i][columnIndex];
@@ -605,7 +650,6 @@ export class DB {
         return { columnIndex, rows };
     }
 
-
     /**
     * @async
     * @method save
@@ -621,7 +665,6 @@ export class DB {
     }
 
 }
-
 
 /**
  * @async
@@ -647,11 +690,12 @@ export async function dropDb(dbName) {
 }
 
 /**
-    * @function describeDatabase
-    * @description Retrieves the name of all tables in the database.
-    * @param  {String} - The name of the database you want to describe
-    * @returns {Array} An array containing the name about all tables.
-    */
+* @function describeDatabase
+* @description Retrieves the name of all tables in the database.
+* @param  {DB} currentDb - The reference to the current database.
+* @param  {String} dbName - The name of the database you want to describe.
+* @returns {Array} An array containing the name about all tables.
+*/
 export async function describeDatabase(currentDb, dbName) {
 
     let dbNamePos = await getDatabasePosition(dbName);
@@ -676,6 +720,11 @@ export async function describeDatabase(currentDb, dbName) {
 
 }
 
+/**
+ * Gets the folder path of the database.
+ * @returns {string} The folder path of all databases.
+ * @private
+ */
 function getDbFolder() {
     const baseDir = process.platform === 'win32' ? 'C:/ajaxdb/' : '/var/ajaxdb/';
     const dbFolder = path.join(baseDir, 'data');
@@ -683,6 +732,12 @@ function getDbFolder() {
     return dbFolder;
 }
 
+/**
+ * Gets the file path of the specified database.
+ * @param {string} dbName - The name of the database.
+ * @returns {Promise<string>} The file path of the specified database.
+ * @private
+ */
 async function getFilePath(dbName) {
     const dbFolder = getDbFolder();
 
@@ -699,11 +754,22 @@ async function getFilePath(dbName) {
     return path.join(dbFolder, `${dbName}_db.json`);
 }
 
+/**
+ * Gets all database names.
+ * @returns {Promise<Array>} An array containing all database names.
+ * @private
+ */
 async function getAllDatabases() {
     let files = await fs.readdir(getDbFolder());
     return files.map(file => file.split('_')[0]);
 }
 
+/**
+ * Gets the position of the database in the list of all databases.
+ * @param {string} dbName - The name of the database.
+ * @returns {Promise<number>} The position of the database in the list of all databases.
+ * @private
+ */
 async function getDatabasePosition(dbName) {
     let databases = await getAllDatabases();
     return treeSearch(databases, dbName);

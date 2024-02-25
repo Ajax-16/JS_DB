@@ -300,7 +300,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line69">line 69</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line83">line 83</a>
     </li></ul></dd>
     
 
@@ -361,7 +361,7 @@
     
 
     
-    <h4 class="name" id="delete"><span class="type-signature">(async) </span>delete<span class="signature">(options)</span><span class="type-signature"> &rarr; {Promise.&lt;boolean>|Array}</span></h4>
+    <h4 class="name" id="delete"><span class="type-signature">(async) </span>delete<span class="signature">(tableName, condition<span class="signature-attributes">opt</span>, operator<span class="signature-attributes">opt</span>, conditionValue)</span><span class="type-signature"> &rarr; {Promise.&lt;boolean>}</span></h4>
     
 
     
@@ -369,7 +369,295 @@
 
 
 <div class="description">
-    Deletes rows from a specified table based on a condition.
+    Deletes rows from a specified table based on a given condition.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>tableName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The name of the table.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>condition</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    this.getOneTable(tableName)[1][0]
+                
+                </td>
+            
+
+            <td class="description last">The column used as the condition for the delete operation. Primary key by default.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operator</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    '='
+                
+                </td>
+            
+
+            <td class="description last">The comparison operator for the condition. "=" by default.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>conditionValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">any</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The value used for the condition.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line373">line 373</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A boolean indicating whether the delete operation was successful or not.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;boolean></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="describeDatabase"><span class="type-signature"></span>describeDatabase<span class="signature">(currentDb, dbName)</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Retrieves the name of all tables in the database.
 </div>
 
 
@@ -405,13 +693,13 @@
 
         <tr>
             
-                <td class="name"><code>options</code></td>
+                <td class="name"><code>currentDb</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Object</span>
+<span class="param-type"><a href="DB.html">DB</a></span>
 
 
             
@@ -421,133 +709,30 @@
 
             
 
-            <td class="description last">Options for deleting rows.
-                <h6>Properties</h6>
-                
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tableName</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">The name of the table.</td>
+            <td class="description last">The reference to the current database.</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>condition</code></td>
+                <td class="name"><code>dbName</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type">String</span>
 
 
             
             </td>
 
             
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
 
             
 
-            <td class="description last">The column to use as a condition for deletion.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>conditionValue</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-|
-
-<span class="param-type">number</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">The value to compare with the condition column.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
+            <td class="description last">The name of the database you want to describe.</td>
         </tr>
 
     
@@ -588,7 +773,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line335">line 335</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line692">line 692</a>
     </li></ul></dd>
     
 
@@ -617,120 +802,7 @@
 
         
 <div class="param-desc">
-    True if the row or rows were successfully deleted; otherwise, it returns an array of arrays containing the error.
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Promise.&lt;boolean></span>
-|
-
-<span class="param-type">Array</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="describeAllTables"><span class="type-signature"></span>describeAllTables<span class="signature">()</span><span class="type-signature"> &rarr; {Array}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    Retrieves information about all tables in the database.
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line275">line 275</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    An array containing information about all tables.
+    An array containing the name about all tables.
 </div>
 
 
@@ -860,7 +932,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line253">line 253</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line310">line 310</a>
     </li></ul></dd>
     
 
@@ -1019,7 +1091,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line542">line 542</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line669">line 669</a>
     </li></ul></dd>
     
 
@@ -1178,7 +1250,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line131">line 131</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line148">line 148</a>
     </li></ul></dd>
     
 
@@ -1236,7 +1308,7 @@
     
 
     
-    <h4 class="name" id="find"><span class="type-signature"></span>find<span class="signature">(options)</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    <h4 class="name" id="find"><span class="type-signature">(async) </span>find<span class="signature">(tableName, distinct<span class="signature-attributes">opt</span>, columns<span class="signature-attributes">opt</span>, condition<span class="signature-attributes">opt</span>, operator<span class="signature-attributes">opt</span>, conditionValue, offset<span class="signature-attributes">opt</span>, limit)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;Array.&lt;any>>>}</span></h4>
     
 
     
@@ -1244,7 +1316,7 @@
 
 
 <div class="description">
-    Finds rows in a specified table based on a condition.
+    Retrieves rows from a specified table based on certain conditions.
 </div>
 
 
@@ -1268,51 +1340,11 @@
         <th>Type</th>
 
         
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>options</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">Options for finding rows.
-                <h6>Properties</h6>
-                
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
         <th>Attributes</th>
         
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -1347,8 +1379,90 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">The name of the table.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>distinct</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    false
+                
+                </td>
+            
+
+            <td class="description last">Whether to retrieve distinct rows.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>columns</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;String></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    this.getOneTable(tableName)[1]
+                
+                </td>
+            
+
+            <td class="description last">The list of columns to retrieve. All columns by default.</td>
         </tr>
 
     
@@ -1380,8 +1494,53 @@
             
 
             
+                <td class="default">
+                
+                    this.getOneTable(tableName)[1][0]
+                
+                </td>
+            
 
-            <td class="description last">The column to use as a condition for finding rows.</td>
+            <td class="description last">The column used as the condition for the search. Primary key by default.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operator</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    '='
+                
+                </td>
+            
+
+            <td class="description last">The comparison operator for the condition. "=" by default.</td>
         </tr>
 
     
@@ -1394,10 +1553,7 @@
             <td class="type">
             
                 
-<span class="param-type">string</span>
-|
-
-<span class="param-type">number</span>
+<span class="param-type">any</span>
 
 
             
@@ -1414,15 +1570,19 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
-            <td class="description last">The value to compare with the condition column.</td>
+            <td class="description last">The value used for the condition.</td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>limit</code></td>
+                <td class="name"><code>offset</code></td>
             
 
             <td class="type">
@@ -1447,15 +1607,49 @@
             
 
             
+                <td class="default">
+                
+                    0
+                
+                </td>
+            
 
-            <td class="description last">The maximum number of rows to retrieve.</td>
+            <td class="description last">The starting index from which to retrieve rows. 0 by default.</td>
         </tr>
 
     
-    </tbody>
-</table>
 
+        <tr>
+            
+                <td class="name"><code>limit</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
             </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The maximum number of rows to retrieve.</td>
         </tr>
 
     
@@ -1496,7 +1690,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line453">line 453</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line487">line 487</a>
     </li></ul></dd>
     
 
@@ -1525,7 +1719,7 @@
 
         
 <div class="param-desc">
-    The specified rows in the specified table based on a condition.
+    An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
 </div>
 
 
@@ -1536,7 +1730,281 @@
     </dt>
     <dd>
         
-<span class="param-type">Array</span>
+<span class="param-type">Promise.&lt;Array.&lt;Array.&lt;any>>></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="findRowsByCondition"><span class="type-signature">(async) </span>findRowsByCondition<span class="signature">(tableName, distinct, columns, condition, operator, conditionValue)</span><span class="type-signature"> &rarr; {Promise.&lt;{columnIndex: number, rows: Array.&lt;number>}>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Searches for rows that meet a certain condition in a table.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>tableName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The name of the table.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>distinct</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Whether the search should disregard duplicates.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>columns</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;String></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The list of columns to be returned.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>condition</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The column used as a condition.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operator</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The logical operator to filter the results.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>conditionValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">any</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The value used for the condition.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line554">line 554</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    An object with the column index and the rows that meet the condition.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;{columnIndex: number, rows: Array.&lt;number>}></span>
 
 
     </dd>
@@ -1606,7 +2074,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line166">line 166</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line183">line 183</a>
     </li></ul></dd>
     
 
@@ -1765,7 +2233,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line179">line 179</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line196">line 196</a>
     </li></ul></dd>
     
 
@@ -1875,7 +2343,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line44">line 44</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line56">line 56</a>
     </li></ul></dd>
     
 
@@ -2102,7 +2570,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line294">line 294</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line332">line 332</a>
     </li></ul></dd>
     
 
@@ -2215,7 +2683,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line525">line 525</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line653">line 653</a>
     </li></ul></dd>
     
 
@@ -2321,7 +2789,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line215">line 215</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line232">line 232</a>
     </li></ul></dd>
     
 
@@ -2431,7 +2899,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line198">line 198</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line215">line 215</a>
     </li></ul></dd>
     
 
@@ -2489,7 +2957,7 @@
     
 
     
-    <h4 class="name" id="showOneTable"><span class="type-signature"></span>showOneTable<span class="signature">(tableName)</span><span class="type-signature"> &rarr; {Array}</span></h4>
+    <h4 class="name" id="showOneTable"><span class="type-signature">(async) </span>showOneTable<span class="signature">(tableName, distinct<span class="signature-attributes">opt</span>, columns<span class="signature-attributes">opt</span>, offset<span class="signature-attributes">opt</span>, limit)</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;Array.&lt;any>>>}</span></h4>
     
 
     
@@ -2497,7 +2965,7 @@
 
 
 <div class="description">
-    Retrieves a specific table with a shortened name for display.
+    Retrieves data from a specified table, allowing for column selection, distinct rows, offset, and limit.
 </div>
 
 
@@ -2521,7 +2989,11 @@
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -2546,10 +3018,174 @@
             </td>
 
             
+                <td class="attributes">
+                
 
+                
+
+                
+                </td>
             
 
-            <td class="description last">The name of the table to retrieve.</td>
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The name of the table.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>distinct</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    false
+                
+                </td>
+            
+
+            <td class="description last">Whether to retrieve distinct rows.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>columns</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;String></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    this.getOneTable(tableName)[1]
+                
+                </td>
+            
+
+            <td class="description last">The list of columns to retrieve. All columns by default.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>offset</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    0
+                
+                </td>
+            
+
+            <td class="description last">The starting index from which to retrieve rows. 0 by default.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>limit</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The maximum number of rows to retrieve.</td>
         </tr>
 
     
@@ -2590,7 +3226,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line232">line 232</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line249">line 249</a>
     </li></ul></dd>
     
 
@@ -2619,7 +3255,7 @@
 
         
 <div class="param-desc">
-    An array representing the specified table with a shortened name.
+    An array containing the retrieved data, or an array indicating an exception encounter if the table is not found.
 </div>
 
 
@@ -2630,7 +3266,7 @@
     </dt>
     <dd>
         
-<span class="param-type">Array</span>
+<span class="param-type">Promise.&lt;Array.&lt;Array.&lt;any>>></span>
 
 
     </dd>
@@ -2648,7 +3284,7 @@
     
 
     
-    <h4 class="name" id="update"><span class="type-signature">(async) </span>update<span class="signature">(options)</span><span class="type-signature"> &rarr; {Promise.&lt;boolean>|Array}</span></h4>
+    <h4 class="name" id="update"><span class="type-signature">(async) </span>update<span class="signature">(tableName, set, setValues, condition, operator<span class="signature-attributes">opt</span>, conditionValue)</span><span class="type-signature"> &rarr; {Promise.&lt;boolean>}</span></h4>
     
 
     
@@ -2656,7 +3292,7 @@
 
 
 <div class="description">
-    Updates rows in a specified table based on a condition.
+    Updates rows in a specified table based on a given condition.
 </div>
 
 
@@ -2680,51 +3316,11 @@
         <th>Type</th>
 
         
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>options</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">Options for updating rows.
-                <h6>Properties</h6>
-                
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
         <th>Attributes</th>
         
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -2759,6 +3355,10 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
             <td class="description last">The name of the table.</td>
         </tr>
@@ -2773,7 +3373,7 @@
             <td class="type">
             
                 
-<span class="param-type">Array</span>
+<span class="param-type">Array.&lt;string></span>
 
 
             
@@ -2781,8 +3381,6 @@
 
             
                 <td class="attributes">
-                
-                    &lt;optional><br>
                 
 
                 
@@ -2792,8 +3390,12 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
-            <td class="description last">An array of columns to update.</td>
+            <td class="description last">The list of columns to be updated.</td>
         </tr>
 
     
@@ -2806,7 +3408,7 @@
             <td class="type">
             
                 
-<span class="param-type">Array</span>
+<span class="param-type">Array.&lt;any></span>
 
 
             
@@ -2814,8 +3416,6 @@
 
             
                 <td class="attributes">
-                
-                    &lt;optional><br>
                 
 
                 
@@ -2825,8 +3425,12 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
-            <td class="description last">An array of values corresponding to the set columns.</td>
+            <td class="description last">The new values for the columns to be updated.</td>
         </tr>
 
     
@@ -2848,6 +3452,41 @@
             
                 <td class="attributes">
                 
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The column used as the condition for the update operation.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>operator</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
                     &lt;optional><br>
                 
 
@@ -2858,8 +3497,14 @@
             
 
             
+                <td class="default">
+                
+                    '='
+                
+                </td>
+            
 
-            <td class="description last">The column to use as a condition for updating.</td>
+            <td class="description last">The comparison operator for the condition. "=" by default.</td>
         </tr>
 
     
@@ -2872,10 +3517,7 @@
             <td class="type">
             
                 
-<span class="param-type">string</span>
-|
-
-<span class="param-type">number</span>
+<span class="param-type">any</span>
 
 
             
@@ -2892,15 +3534,12 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
-            <td class="description last">The value to compare with the condition column.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
+            <td class="description last">The value used for the condition.</td>
         </tr>
 
     
@@ -2941,7 +3580,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line390">line 390</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line422">line 422</a>
     </li></ul></dd>
     
 
@@ -2970,7 +3609,7 @@
 
         
 <div class="param-desc">
-    True if the row or rows were successfully updated; otherwise, it returns an array of arrays containing the error.
+    A boolean indicating whether the update operation was successful or not.
 </div>
 
 
@@ -2982,9 +3621,6 @@
     <dd>
         
 <span class="param-type">Promise.&lt;boolean></span>
-|
-
-<span class="param-type">Array</span>
 
 
     </dd>
@@ -3012,13 +3648,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DB.html">DB</a></li><li><a href="DB_DB.html">DB</a></li></ul><h3>Global</h3><ul><li><a href="global.html#createTable">createTable</a></li><li><a href="global.html#delete">delete</a></li><li><a href="global.html#describeAllTables">describeAllTables</a></li><li><a href="global.html#describeOneTable">describeOneTable</a></li><li><a href="global.html#dropDb">dropDb</a></li><li><a href="global.html#dropTable">dropTable</a></li><li><a href="global.html#find">find</a></li><li><a href="global.html#getAllTables">getAllTables</a></li><li><a href="global.html#getOneTable">getOneTable</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#insert">insert</a></li><li><a href="global.html#save">save</a></li><li><a href="global.html#showAllTableNames">showAllTableNames</a></li><li><a href="global.html#showAllTables">showAllTables</a></li><li><a href="global.html#showOneTable">showOneTable</a></li><li><a href="global.html#update">update</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="DB.html">DB</a></li><li><a href="DB_DB.html">DB</a></li></ul><h3>Global</h3><ul><li><a href="global.html#createTable">createTable</a></li><li><a href="global.html#delete">delete</a></li><li><a href="global.html#describeDatabase">describeDatabase</a></li><li><a href="global.html#describeOneTable">describeOneTable</a></li><li><a href="global.html#dropDb">dropDb</a></li><li><a href="global.html#dropTable">dropTable</a></li><li><a href="global.html#find">find</a></li><li><a href="global.html#findRowsByCondition">findRowsByCondition</a></li><li><a href="global.html#getAllTables">getAllTables</a></li><li><a href="global.html#getOneTable">getOneTable</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#insert">insert</a></li><li><a href="global.html#save">save</a></li><li><a href="global.html#showAllTableNames">showAllTableNames</a></li><li><a href="global.html#showAllTables">showAllTables</a></li><li><a href="global.html#showOneTable">showOneTable</a></li><li><a href="global.html#update">update</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Fri Dec 22 2023 16:45:09 GMT+0100 (hora estándar de Europa central)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.2</a> on Sun Feb 25 2024 19:12:46 GMT+0100 (hora estándar de Europa central)
 </footer>
 
 <script> prettyPrint(); </script>
