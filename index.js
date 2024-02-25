@@ -253,7 +253,7 @@ export class DB {
     * @param {Number} limit - The name of the table to retrieve.
     * @returns {Array} An array representing the specified table.
     */
-    showOneTable(tableName, columns = this.getOneTable(tableName)[1], offset = 0, limit) {
+    showOneTable({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], offset = 0, limit }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -291,9 +291,29 @@ export class DB {
         const selectedHeaders = selectedColumnsIndices.map(index => tableHeaders[1][index]);
         const selectedTableHeaders = [tableHeaders[0], selectedHeaders];
 
-        dataRows = dataRows.map(row => selectedColumnsIndices.map(index => row[index]));
+        if (distinct !== false) {
+            const distinctRows = [];
+            const set = new Set();
+            for (const row of dataRows) {
+                let newRow = [];
+                let rowSignature = '';
+                for (const column of columns) {
+                    const columnIndex = treeSearch(tableHeaders[1], column);
+                    if (columnIndex !== -1) {
+                        newRow.push(row[columnIndex]);
+                        rowSignature += row[columnIndex];
+                    }
+                }
+                if (!set.has(rowSignature)) {
+                    distinctRows.push(newRow);
+                    set.add(rowSignature);
+                }
+            }
+            dataRows = distinctRows;
+        }
 
         return selectedTableHeaders.concat(dataRows);
+
     }
 
 
@@ -515,7 +535,7 @@ export class DB {
     async findRowsByCondition({ tableName, distinct, columns = this.getOneTable(tableName)[1], condition, operator, conditionValue }) {
         const table = this.getOneTable(tableName);
         const columnIndex = treeSearch(table[1], condition);
-    
+
         // Indexar los valores de la columna
         const indexMap = new Map();
         for (let i = 2; i < table.length; i++) {
@@ -525,9 +545,9 @@ export class DB {
             }
             indexMap.get(value).push(i);
         }
-    
+
         let rows = [];
-    
+
         switch (operator) {
             case '>':
                 for (let [value, indices] of indexMap) {
@@ -573,13 +593,13 @@ export class DB {
                 }
                 break;
         }
-    
+
         if (distinct !== false) {
             const distinctRows = [];
             const set = new Set();
             for (const rowIndex of rows) {
                 // Creamos una firma para cada fila la cual va a ser un string con la fila en sí y así evitar que se repita.
-                let rowSignature = '';  
+                let rowSignature = '';
                 for (const column of columns) {
                     const columnIndex = treeSearch(table[1], column);
                     if (columnIndex !== -1) {
@@ -587,15 +607,15 @@ export class DB {
                     }
                 }
                 // Comprobamos que el SET no tenga ya esa firma y así evitar que se inserte en el array de filas a devolver.
-                if (!set.has(rowSignature)) {   
+                if (!set.has(rowSignature)) {
                     distinctRows.push(rowIndex);
                     // Si no existe la firma en el SET, la añadimos.
-                    set.add(rowSignature);  
+                    set.add(rowSignature);
                 }
             }
             rows = distinctRows;
         }
-    
+
         return { columnIndex, rows };
     }
 
