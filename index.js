@@ -253,69 +253,55 @@ export class DB {
     * @param {Number} limit - The name of the table to retrieve.
     * @returns {Array} An array representing the specified table.
     */
-    showOneTable({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], offset = 0, limit }) {
+    async showOneTable({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], offset = 0, limit }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
-
+    
         const tableNames = this.showAllTableNames();
         const position = treeSearch(tableNames, tableName);
-
+    
         if (position === -1) {
             return [['EXCEPTION ENCOUNTER'], ['TABLE "' + tableName + '" NOT FOUND!']];
         }
-
+    
         let tableCopy = [...this.tables[position]];
         tableCopy[0] = tableCopy[0].slice(0, 1);
         const tableHeaders = tableCopy.slice(0, 2);
-
-        for (let i = 0; i < columns.length; i++) {
-            if (!tableHeaders[1].includes(columns[i])) {
-                return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columns[i] + '" IS NOT A VALID COLUMN!']];
-            }
-        }
-
-        let dataRows = tableCopy.slice(2);
+    
+        // Filtrar las filas para incluir solo las columnas seleccionadas
+        const selectedColumnIndices = columns.map(column => tableHeaders[1].indexOf(column));
+        const filteredDataRows = tableCopy.slice(2).map(row => selectedColumnIndices.map(index => row[index]));
+    
+        // Aplicar offset y limit si se especifican
+        let dataRows = filteredDataRows;
         if (limit !== undefined) {
             dataRows = dataRows.slice(offset, offset + limit);
         } else if (offset > 0) {
             dataRows = dataRows.slice(offset);
         }
-
-        if (dataRows.length === 0) {
-            return tableHeaders;
-        }
-
-        const selectedColumnsIndices = columns.map(column => tableHeaders[1].indexOf(column));
-        const selectedHeaders = selectedColumnsIndices.map(index => tableHeaders[1][index]);
-        const selectedTableHeaders = [tableHeaders[0], selectedHeaders];
-
+    
+        // Construir la respuesta final
+        const selectedTableHeaders = [tableHeaders[0], columns];
+        const result = [selectedTableHeaders[0], selectedTableHeaders[1], ...dataRows];
+    
         if (distinct !== false) {
+            // Manejar la opción distinct si está activada
             const distinctRows = [];
             const set = new Set();
-            for (const row of dataRows) {
-                let newRow = [];
-                let rowSignature = '';
-                for (const column of columns) {
-                    const columnIndex = treeSearch(tableHeaders[1], column);
-                    if (columnIndex !== -1) {
-                        newRow.push(row[columnIndex]);
-                        rowSignature += row[columnIndex];
-                    }
-                }
+            for (const row of result.slice(2)) {
+                const rowSignature = row.join('-'); // Crear una firma única para la fila
                 if (!set.has(rowSignature)) {
-                    distinctRows.push(newRow);
+                    distinctRows.push(row);
                     set.add(rowSignature);
                 }
             }
-            dataRows = distinctRows;
+            return [selectedTableHeaders[0], selectedTableHeaders[1], ...distinctRows];
         }
-
-        return selectedTableHeaders.concat(dataRows);
-
+    
+        return result;
     }
-
 
     /**
     * @method describeOneTable
