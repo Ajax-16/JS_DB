@@ -90,7 +90,7 @@ export class DB {
    * @param {Array} options.columns - An array of column names.
    * @returns {Promise<boolean>|Array} True if the table was created successfully; otherwise, it returns an array of arrays containing the error.
    */
-    async createTable({ tableName, primaryKey, columns }) {
+    async createTable({ tableName, primaryKey, columns, foreignKeys }) {
 
         if (!this.initialized) {
             console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. DATABASE "' + this.name + '" NOT INITIALIZED! ');
@@ -127,12 +127,38 @@ export class DB {
 
         table[0][0] = tableName;
 
-        table[0][1] = 0;
-
         table[1][0] = primaryKey;
 
         for (let i = 0; i < columns.length; i++) {
             table[1][i + 1] = columns[i];
+        }
+
+        let headers = {};
+
+        headers.elements = 0;
+
+        dbMethods.insert(table[0], headers);
+
+        if(foreignKeys !== undefined) {
+
+            table[0][1]["references"] = []
+
+            for(const foreignKey of foreignKeys) {
+
+                let {name, columnName, referenceTable, referenceColumn} = foreignKey;
+
+                if(name === undefined) {
+                    name = referenceTable.concat(`_${referenceColumn}`);
+                }
+
+                    console.log(table)
+
+                    table[0][1]["references"].push({name, columnName, referenceTable, referenceColumn})
+
+                dbMethods.insert(table[1], columnName)
+
+            }
+
         }
 
         dbMethods.insert(this.tables, table);
@@ -153,9 +179,8 @@ export class DB {
     * @returns {Promise<boolean>} True if the table was successfully dropped; otherwise, it returns false.
     */
     async dropTable(tableName) {
-
         if (!this.initialized) {
-            console.log('TABLE WITH NAME "' + tableName + '" COULD NOT BE DROPPED!. DATABASE "' + this.name + '" NOT INITIALIZED!');
+            console.log('TABLE WITH NAME "' + tableName + '" COULD NOT BE DROPPED! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return false;
         }
 
@@ -166,7 +191,7 @@ export class DB {
         let tableIndex = treeSearch(tableNames, tableName);
 
         if (tableIndex === -1) {
-            console.log('TABLE COULD NOT BE DROPPED!. TABLE "' + tableName + '" DOES\'T EXIST!')
+            console.log('TABLE COULD NOT BE DROPPED! TABLE "' + tableName + '" DOES\'T EXIST!')
             result = false;
         }
 
@@ -177,6 +202,99 @@ export class DB {
         await this.save();
 
         return result;
+
+    }
+
+    /**
+    * @method alterTable
+    * @description Alters the specified table's columns or columns' names.
+    * @param {String} tableName The name of the table to alter.
+    * @param {String} operation The operation to perform on the table.
+    * @param {String} target The target to alter.
+    */
+    async alterTable(tableName, operation, target, {elementName, elementValue}) {
+        if (!this.initialized) {
+            console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
+            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+        }
+
+        let table = this.getOneTable(tableName);
+        if (table[0] === 'EXCEPTION ENCOUNTER') {
+            console.log('TABLE COULD NOT BE ALTERED! TABLE "' + tableName + '" DOES\'T EXIST!')
+            result = false;
+        }
+
+        operation = operation.toUpperCase();
+        target = target.toUpperCase();
+
+        switch (operation) {
+
+            case 'ADD':
+
+                switch (target) {
+
+                    case 'COLUMN':
+
+                            
+
+                        break;
+
+                    case 'REFERENCE':
+
+                            
+
+                        break;
+
+                }
+
+                break;
+
+            case 'DROP':
+
+                switch (target) {
+
+                    case 'COLUMN':
+
+
+
+                        break;
+
+                    case 'REFERENCE':
+
+
+
+                        break;
+
+                }
+
+                break;
+
+            case 'RENAME':
+
+                switch (target) {
+
+                    case 'COLUMN':
+
+
+
+                        break;
+
+                    case 'REFERENCE':
+
+
+
+                        break;
+
+                }
+
+                break;
+
+            default:
+
+                console.log('UNKNOWN ALTERING OPERATION!')
+                return false;
+
+        }
 
     }
 
@@ -338,7 +456,7 @@ export class DB {
     * @param {Array} options.values - An array of values to insert.
     * @returns {Promise<boolean>|Array} True if the row was successfully inserted; otherwise, it returns an array of arrays containing the error.
     */
-    async insert({ tableName, values }) {
+    async insert({ tableName, columns, values }) {
         if (!this.initialized) {
             console.log('ROW CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -348,26 +466,37 @@ export class DB {
             console.log('ROW CANNOT BE CREATED! TABLE "' + tableName + '" DOESN\'T EXISTS!');
             return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! TABLE "' + tableName + '" DOESN\'T EXISTS!']]
         }
-        let limitOnValues = table[1].length - 1;
-        if (values.length < limitOnValues) {
-            console.log('ROW CANNOT BE CREATED! SOME OF THE VALUES ARE NULL!')
-            return [['EXCETION ENCOUNTER'], ['ROW CANNOT BE CREATED! SOME OF THE VALUES ARE NULL!']]
-        }
-        let row = [table[0][1]];
-        for (let i = 0; i < limitOnValues; i++) {
-            dbMethods.insert(row, values[i]);
+
+        if (!columns) {
+            columns = table[1].slice(1);
         }
 
+        let columnNames = table[1];
+        let elementsValue = table[0][1].elements; 
+        let row = [elementsValue]; 
+        
+        for (let i = 1; i < columnNames.length; i++) {
+            let columnName = columnNames[i];
+            if (columns.includes(columnName)) {
+                let valueIndex = treeSearch(columns, columnName);
+                if(values[valueIndex] !== undefined) {
+                    dbMethods.insert(row, values[valueIndex])
+                }else{
+                    dbMethods.insert(row, null);
+                }
+            } else {
+                dbMethods.insert(row, null);
+            }
+        }
+    
         dbMethods.insert(table, row);
-
-        table[0][1]++;
-
+        table[0][1].elements++; // Actualizar el contador de elements en los encabezados de la tabla
+    
         await this.save();
-
+    
         console.log('CREATED ROW WITH "' + table[1][0] + '" VALUE = "' + table[table.length - 1][0] + '"')
-
+    
         return true;
-
     }
 
     /**
@@ -467,13 +596,19 @@ export class DB {
         let finalMsg = '';
         let totalUpdated = 0;
 
+        let actualized = false;
+
         if (setValues && setValues.length === set.length) {
             for (const rowIndex of rows) {
+                actualized = false
                 for (let j = 0; j < set.length; j++) {
                     if (table[rowIndex][setIndexes[j]] !== setValues[j]) {
                         table[rowIndex][setIndexes[j]] = setValues[j];
-                        totalUpdated++;
+                        actualized = true;
                     }
+                }
+                if(actualized) {
+                    totalUpdated++;
                 }
             }
             updated = totalUpdated > 0;
