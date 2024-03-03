@@ -3,7 +3,7 @@ import { treeSearch } from './algorithms/tree_search.js';
 import { Cache } from './utils/cache.js';
 import { promises as fs } from 'fs';
 import { fileURLToPath } from 'url';
-import path, { dirname } from 'path';
+import path, { dirname, parse } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -714,31 +714,138 @@ export class DB {
 
         let rows = [];
 
-        switch (operator) {
+        let escapedPattern, regexPattern, regex;
+
+        switch (operator.toUpperCase()) {
             case '>':
-                for (let [value, indices] of indexMap) {
-                    if (value > conditionValue) {
-                        rows = rows.concat(indices);
+                if(Array.isArray(conditionValue)){
+                    for (let [value, indices] of indexMap) {
+                        if (value > Math.max(...conditionValue)) {
+                            rows = rows.concat(indices);
+                        }
+                    }
+                }else{
+                    for (let [value, indices] of indexMap) {
+                        if (value > conditionValue) {
+                            rows = rows.concat(indices);
+                        }
                     }
                 }
                 break;
             case '<':
-                for (let [value, indices] of indexMap) {
-                    if (value < conditionValue) {
-                        rows = rows.concat(indices);
+                if(Array.isArray(conditionValue)){
+                    for (let [value, indices] of indexMap) {
+                        if (value < Math.min(...conditionValue)) {
+                            rows = rows.concat(indices);
+                        }
+                    }
+                }else{
+                    for (let [value, indices] of indexMap) {
+                        if (value < conditionValue) {
+                            rows = rows.concat(indices);
+                        }
                     }
                 }
                 break;
             case '>=':
-                for (let [value, indices] of indexMap) {
-                    if (value >= conditionValue) {
-                        rows = rows.concat(indices);
+                if(Array.isArray(conditionValue)){
+                    for (let [value, indices] of indexMap) {
+                        if (value >= Math.max(...conditionValue)) {
+                            rows = rows.concat(indices);
+                        }
+                    }
+                }else{
+                    for (let [value, indices] of indexMap) {
+                        if (value >= conditionValue) {
+                            rows = rows.concat(indices);
+                        }
                     }
                 }
                 break;
             case '<=':
+                if(Array.isArray(conditionValue)){
+                    for (let [value, indices] of indexMap) {
+                        if (value <= Math.min(...conditionValue)) {
+                            rows = rows.concat(indices);
+                        }
+                    }
+                }else{
+                    for (let [value, indices] of indexMap) {
+                        if (value <= conditionValue) {
+                            rows = rows.concat(indices);
+                        }
+                    }
+                }
+                break;
+            case 'IN':
+                if (Array.isArray(conditionValue)){
+                    for(let [value, indices] of indexMap) {
+                        if (conditionValue.includes(value)) {
+                            rows = rows.concat(indices);
+                        }
+                    }
+                }else{
+                    if (!indexMap.has(conditionValue)) {
+                        rows = [];
+                    } else {
+                        rows = indexMap.get(conditionValue) || [];
+                    }
+                }
+                break;
+            case 'NOT IN':
+                if (Array.isArray(conditionValue)){
+                    for(let [value, indices] of indexMap) {
+                        if (!conditionValue.includes(value)) {
+                            rows = rows.concat(indices);
+                        }
+                    }
+                }else{
+                    for (let [value, indices] of indexMap) {
+                        if (value !== conditionValue) {
+                            rows = rows.concat(indices);
+                        }
+                    }
+                }
+                break;
+            case 'LIKE':
+                if(conditionValue === null || !isNaN(conditionValue)) {
+                    if (!indexMap.has(conditionValue)) {
+                        rows = [];
+                    } else {
+                        rows = indexMap.get(conditionValue) || [];
+                    }
+                    break;
+                }
+
+                escapedPattern = conditionValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                
+                regexPattern = escapedPattern.replace(/%/g, '.*');
+
+                regex = new RegExp(`^${regexPattern}$`, 'ui'); 
+    
                 for (let [value, indices] of indexMap) {
-                    if (value <= conditionValue) {
+                    if (regex.test(value)) {
+                        rows = rows.concat(indices);
+                    }
+                }
+                break;
+            case 'NOT LIKE':
+                if(conditionValue === null || !isNaN(conditionValue)) {
+                    for (let [value, indices] of indexMap) {
+                        if (value !== conditionValue) {
+                            rows = rows.concat(indices);
+                        }
+                    }
+                    break;
+                }
+                escapedPattern = conditionValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                
+                regexPattern = escapedPattern.replace(/%/g, '.*');
+
+                regex = new RegExp(`^${regexPattern}$`, 'ui'); 
+    
+                for (let [value, indices] of indexMap) {
+                    if (!regex.test(value)) {
                         rows = rows.concat(indices);
                     }
                 }
