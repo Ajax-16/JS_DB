@@ -1,6 +1,6 @@
 {
   "name": "ajaxdb-core",
-  "version": "1.0.7v4",
+  "version": "1.0.7v5",
   "description": "Not-Object-based JS database management system",
   "main": "index.js",
   "scripts": {

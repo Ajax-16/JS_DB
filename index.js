@@ -560,7 +560,7 @@ export class DB {
     * @param {any} conditionValue - The value used for the condition.
     * @returns {Promise<boolean>} A boolean indicating whether the update operation was successful or not.
     */
-    async update({ tableName, set = [], setValues, condition = condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
+    async update({ tableName, set = [], setValues, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
         if (!this.initialized) {
             console.log('ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
