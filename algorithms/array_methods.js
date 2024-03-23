@@ -1,4 +1,4 @@
-import { bubbleSort } from "./bubble_sort.js";
+import { bubbleSort, quickSort } from "./sort_algorithms.js";
 import { treeSearch } from "./tree_search.js";
 
 export default {
@@ -32,6 +32,14 @@ export default {
         }
         return result;
     },
+    hasDuplicity: function(array) {
+        let arraySet = new Set([...array]);
+        if(arraySet.size < array.length) {
+            return true;
+        }else{
+            return false;
+        }
+    },
     editByIndex: function(array, index, newElement){
         if(index >= 0 && index < array.length){
         array[index] = newElement;
@@ -53,8 +61,8 @@ export default {
         }
         return result;
     },
-    sort: function(array){
-        array = bubbleSort(array);
+    sort: function(array, asc){
+        array = quickSort(array, asc);
     }
 
 }

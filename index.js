@@ -2,11 +2,7 @@ import dbMethods from './algorithms/array_methods.js';
 import { treeSearch } from './algorithms/tree_search.js';
 import { Cache } from './utils/cache.js';
 import { promises as fs } from 'fs';
-import { fileURLToPath } from 'url';
-import path, { dirname, parse } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import path from 'path';
 
 /**
  * @class DB
@@ -129,10 +125,6 @@ export class DB {
 
         table[1][0] = primaryKey;
 
-        for (let i = 0; i < columns.length; i++) {
-            table[1][i + 1] = columns[i];
-        }
-
         let headers = {};
 
         headers.elements = 0;
@@ -140,6 +132,8 @@ export class DB {
         dbMethods.insert(table[0], headers);
 
         if(foreignKeys !== undefined) {
+
+            let foreignColumns = [];
 
             table[0][1]["references"] = []
 
@@ -151,12 +145,31 @@ export class DB {
                     name = referenceTable.concat(`_${referenceColumn}`);
                 }
 
-                    console.log(table)
-
                     table[0][1]["references"].push({name, columnName, referenceTable, referenceColumn})
 
-                dbMethods.insert(table[1], columnName)
+                dbMethods.insert(foreignColumns, foreignKey.columnName)
+            }
+            
+            let allcolumns = [...columns,...foreignColumns]
 
+            if(!dbMethods.hasDuplicity(allcolumns)) {
+                for (let i = 0; i < allcolumns.length; i++) {
+                    table[1][i + 1] = allcolumns[i];
+                }
+            }else {
+                console.log('TABLE WITH NAME "' + tableName + '" CANNOT BE CREATED. DUPLICATED COLUMNS FOUND!');
+                return false;
+            }
+
+        }else {
+
+            if(!dbMethods.hasDuplicity(columns)) {
+                for (let i = 0; i < columns.length; i++) {
+                    table[1][i + 1] = columns[i];
+                }
+            }else {
+                console.log('TABLE WITH NAME "' + tableName + '" CANNOT BE CREATED. DUPLICATED COLUMNS FOUND!');
+                return false;
             }
 
         }
@@ -212,7 +225,7 @@ export class DB {
     * @param {String} operation The operation to perform on the table.
     * @param {String} target The target to alter.
     */
-    async alterTable(tableName, operation, target, {elementName, elementValue}) {
+    async alterTable({tableName, operation, target, options = {save: false}, elements}) {
         if (!this.initialized) {
             console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -235,7 +248,23 @@ export class DB {
 
                     case 'COLUMN':
 
-                            
+                    elements.forEach(async (column) => {
+                        if (treeSearch(table[1], column.name)===-1) {
+                            dbMethods.insert(table[1], column.name);
+                            if (column.void) {
+                                for (let i = 2; i < table.length; i++) {
+                                    dbMethods.insert(table[i], null);
+                                }
+                            }
+
+                            if (options.save) {
+                                await this.save();
+                            }
+                        }else {
+                            console.log('column already exists');
+                        }
+
+                    })
 
                         break;
 
@@ -521,7 +550,11 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST!']];
         }
 
-        const { columnIndex, rows } = await this.findRowsByCondition({ tableName, condition, operator, conditionValue });
+        const { columnIndex, rows, success, errorMessage } = await this.findRowsByCondition({ tableName, condition, operator, conditionValue });
+
+        if(!success) {
+            return [['EXCEPTION ENCOUNTER'], [errorMessage]];
+        }
 
         if (columnIndex === -1) {
             console.log('ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN!');
@@ -566,7 +599,11 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
 
-        const { columnIndex, rows } = await this.findRowsByCondition({ tableName, condition, operator, conditionValue });
+        const { columnIndex, rows, success, errorMessage } = await this.findRowsByCondition({ tableName, condition, operator, conditionValue });
+
+        if(!success) {
+            return [['EXCEPTION ENCOUNTER'],[errorMessage]];
+        }
 
         if (columnIndex === undefined || columnIndex === -1) {
             console.log('ROW OR ROWS CANNOT BE UPDATED! CONDITION "' + condition + '" IS NOT A VALID COLUMN!');
@@ -584,13 +621,20 @@ export class DB {
             columnIndexes[column] = index;
         });
 
+        let setColumnExist = {exist: true, columnName: null};
+
         const setIndexes = set.map(column => {
             const index = columnIndexes[column];
             if (index === undefined) {
-                console.log('ROW OR ROWS CANNOT BE UPDATED! COLUMN "' + column + '" IS NOT A VALID COLUMN!');
+                console.log('ROW OR ROWS CANNOT BE UPDATED! CANNOT SET A VALUE TO COLUMN "' + column + '" BECAUSE IT DOES\'T EXISTS!');
+                setColumnExist = { exist: false, columnName: column}
             }
             return index;
         });
+
+        if(setColumnExist.exist === false) {
+            return [['EXCEPTION ENCOUNTER'],['ROW OR ROWS CANNOT BE UPDATED! CANNOT SET A VALUE TO COLUMN "' + setColumnExist.columnName + '" BECAUSE IT DOES\'T EXISTS!']]
+        }   
 
         let updated = false;
         let finalMsg = '';
@@ -651,7 +695,11 @@ export class DB {
             }
         }
 
-        const { rows } = await this.findRowsByCondition({ tableName, columns, distinct, condition, operator, conditionValue });
+        const { rows, success, errorMessage } = await this.findRowsByCondition({ tableName, columns, distinct, condition, operator, conditionValue });
+
+        if(!success) {
+            return [['EXCEPTION ENCOUNTER'], [errorMessage]];
+        }
 
         if (rows.length > 0) {
 
@@ -698,9 +746,18 @@ export class DB {
      * @param {any} conditionValue - The value used for the condition.
      * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
-    async findRowsByCondition({ tableName, distinct, columns = this.getOneTable(tableName)[1], condition, operator, conditionValue }) {
+    async findRowsByCondition({ tableName, distinct, columns = this.getOneTable(tableName)[1], condition, operator, conditionValue, orderBy = 'id', asc = true }) {
         const table = this.getOneTable(tableName);
         const columnIndex = treeSearch(table[1], condition);
+        if (columnIndex === -1) {
+            console.log('CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!');
+            return {columnIndex: 0, rows: [], success: false, errorMessage: 'CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!'};
+        }
+        const orderColumnIndex = treeSearch(table[1], orderBy);
+        if (orderColumnIndex === -1) {
+            console.log('ORDER COLUMN "' + orderBy + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!');
+            return {columnIndex: 0, rows: [], success: false, errorMessage: 'ORDER COLUMN "' + orderBy + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!'};
+        }
 
         // Se indexan los valores de la columna especificada en la condición
         const indexMap = new Map();
@@ -889,7 +946,7 @@ export class DB {
             rows = distinctRows;
         }
 
-        return { columnIndex, rows };
+        return { columnIndex, rows, success: true };
     }
 
     /**

@@ -1,4 +1,4 @@
-import { bubbleSort } from "./bubble_sort.js";
+import { bubbleSort } from "./sort_algorithms.js";
 
 export function treeSearch(array, search) {
     let menor = 0;
