@@ -25,29 +25,32 @@ export function bubbleSort(array){
 
 export function quickSort(array, asc = true) {
 
-    if (array.length <= 1) {
-        return [...array];
+    let arrayCopy = [...array];
+    
+    if (arrayCopy.length <= 1) {
+        return arrayCopy;
     }
 
-    const pivotIndex = Math.floor(array.length / 2);
-    const pivot = array[pivotIndex];
+    const pivot = arrayCopy[0];
 
-    const leftPart = [];
-    const rightPart = [];
+    const menores = [];
+    const mayores = [];
 
-    for (let i = 0; i < array.length; i++) {
-        if (i !== pivotIndex) {
-            if ((asc && array[i] < pivot) || (!asc && array[i] > pivot)) {
-                arrayMethods.insert(leftPart, array[i]);
+    for (let i = 0; i < arrayCopy.length; i++) {
+        if (i !== arrayCopy.indexOf(pivot)) {
+            if (arrayCopy[i] <= pivot) {
+                arrayMethods.insert(menores, arrayCopy[i]);
             } else {
-                arrayMethods.insert(rightPart, array[i]);
+                arrayMethods.insert(mayores, arrayCopy[i]);
             }
         }
     }
 
     if (asc) {
-        return [...quickSort(leftPart, asc), pivot, ...quickSort(rightPart, asc)];
+        // Orden ascendente
+        return [...quickSort(menores, asc), pivot, ...quickSort(mayores, asc)];
     } else {
-        return [...quickSort(rightPart, asc), pivot, ...quickSort(leftPart, asc)];
+        // Orden descendente
+        return [...quickSort(mayores, asc), pivot, ...quickSort(menores, asc)];
     }
 }

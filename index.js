@@ -1,5 +1,6 @@
 import dbMethods from './algorithms/array_methods.js';
 import { treeSearch } from './algorithms/tree_search.js';
+import { bubbleSort, quickSort } from './algorithms/sort_algorithms.js';
 import { Cache } from './utils/cache.js';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -677,7 +678,7 @@ export class DB {
     * @param {number} limit - The maximum number of rows to retrieve.
     * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
     */
-    async find({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue, offset = 0, limit }) {
+    async find({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue, offset = 0, limit, orderBy, asc }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -695,7 +696,7 @@ export class DB {
             }
         }
 
-        const { rows, success, errorMessage } = await this.findRowsByCondition({ tableName, columns, distinct, condition, operator, conditionValue });
+        const { rows, success, errorMessage } = await this.findRowsByCondition({ tableName, columns, distinct, condition, operator, conditionValue, orderBy, asc });
 
         if(!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -746,7 +747,7 @@ export class DB {
      * @param {any} conditionValue - The value used for the condition.
      * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
-    async findRowsByCondition({ tableName, distinct, columns = this.getOneTable(tableName)[1], condition, operator, conditionValue, orderBy = 'id', asc = true }) {
+    async findRowsByCondition({ tableName, distinct, columns = this.getOneTable(tableName)[1], condition, operator, conditionValue, orderBy = this.getOneTable(tableName)[1][0], asc = true }) {
         const table = this.getOneTable(tableName);
         const columnIndex = treeSearch(table[1], condition);
         if (columnIndex === -1) {
@@ -945,6 +946,20 @@ export class DB {
             }
             rows = distinctRows;
         }
+
+        rows.sort((rowIndexA, rowIndexB) => {
+            const valueA = table[rowIndexA][orderColumnIndex];
+            const valueB = table[rowIndexB][orderColumnIndex];
+            if (asc) {
+                if (valueA < valueB) return -1;
+                if (valueA > valueB) return 1;
+                return 0;
+            } else {
+                if (valueA > valueB) return -1;
+                if (valueA < valueB) return 1;
+                return 0;
+            }
+        });
 
         return { columnIndex, rows, success: true };
     }
