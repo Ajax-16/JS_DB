@@ -678,39 +678,39 @@ export class DB {
     * @param {number} limit - The maximum number of rows to retrieve.
     * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
     */
-    async find({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], join, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue, offset = 0, limit, orderBy, asc }) {
+    async find({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue, offset = 0, limit, orderBy, asc }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
-    
+
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'EXCEPTION ENCOUNTER') {
             console.log('TABLE "' + tableName + '" DOESN\'T EXIST!');
             return [['EXCEPTION ENCOUNTER'], ['TABLE ' + tableName + ' DOESN\'T EXIST!']];
         }
-    
+
         for (let i = 0; i < columns.length; i++) {
             if (!table[1].includes(columns[i])) {
                 return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columns[i] + '" IS NOT A VALID COLUMN!']];
             }
         }
-    
-        const { rows, success, errorMessage } = await this.findRowsByCondition({ tableName, columns, distinct, join, condition, operator, conditionValue, orderBy, asc });
-    
+
+        const { rows, success, errorMessage } = await this.findRowsByCondition({ tableName, columns, distinct, condition, operator, conditionValue, orderBy, asc });
+
         if(!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
         }
-    
+
         if (rows.length > 0) {
+
             let result = [];
-    
+
             if (offset > rows.length) {
                 return [[tableName], columns];
             }
-    
-            // Devuelve todas las filas de las columnas seleccionadas.
-            
+
+            // Devuelve todas las filas de las columnas selceccionadas.
             for (let i = offset; i < rows.length; i++) {
                 let rowIndex = rows[i];
                 let row = [];
@@ -721,54 +721,18 @@ export class DB {
                         row.push(table[rowIndex][columnIndex]);
                     }
                 }
-    
-                // Si hay un join, añade la información de la tabla asociada
-                if (join) {
-                    for (const joinInfo of join) {
-                        const joinTable = this.getOneTable(joinInfo.tableName);
-                        const joinColumnIndex = treeSearch(table[1], joinInfo.columnName);
-                        const joinTableColumnIndex = treeSearch(joinTable[1], joinInfo.referenceColumn);
-
-                        if (joinColumnIndex === -1 || joinTableColumnIndex === -1) {
-                            console.log('JOIN COLUMN OR REFERENCE COLUMN NOT FOUND!');
-                            return [['EXCEPTION ENCOUNTER'], ['JOIN COLUMN OR REFERENCE COLUMN NOT FOUND!']];
-                        }
-                        const joinValue = table[rowIndex][joinColumnIndex];
-                        for (let j = 2; j < joinTable.length; j++) {
-                            const joinTableRow = joinTable[j];
-                            if (joinTableRow[joinTableColumnIndex] === joinValue) {
-                                for (const joinTableColumn of joinTableRow) {
-                                    row.push(joinTableColumn);
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-                
                 result.push(row);
             }
-    
+
             if (limit && limit < rows.length) {
                 result = result.slice(0, limit);
             }
 
-            let findHearders = [tableName]
-
-            if(join) {
-                columns.map((column)=>tableName + '.' + column)
-                for (const joinInfo of join) {
-                    findHearders.push(joinInfo.tableName);
-                    const joinTable = this.getOneTable(joinInfo.tableName);
-                    joinTable[1].forEach(column => columns.push(joinInfo.tableName + '.' + column));
-                }
-            }
-
-    
-            return [findHearders, columns, ...result];
+            return [[tableName], columns, ...result];
         }
-    
+
         return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS NOT FOUND!']]
+
     }
 
     /**
@@ -783,7 +747,7 @@ export class DB {
      * @param {any} conditionValue - The value used for the condition.
      * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
-    async findRowsByCondition({ tableName, distinct, columns = this.getOneTable(tableName)[1], join, condition, operator, conditionValue, orderBy = this.getOneTable(tableName)[1][0], asc = true }) {
+    async findRowsByCondition({ tableName, distinct, columns = this.getOneTable(tableName)[1], condition, operator, conditionValue, orderBy = this.getOneTable(tableName)[1][0], asc = true }) {
         const table = this.getOneTable(tableName);
         const columnIndex = treeSearch(table[1], condition);
         if (columnIndex === -1) {
@@ -796,47 +760,17 @@ export class DB {
             return {columnIndex: 0, rows: [], success: false, errorMessage: 'ORDER COLUMN "' + orderBy + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!'};
         }
 
-        let rows = [];
-
+        // Se indexan los valores de la columna especificada en la condición
         const indexMap = new Map();
-    
-        // Filtrar filas según la asociación definida en join
-        if (join) {
-            for(const joinInfo of join) {
-                const joinTable = this.getOneTable(joinInfo.tableName);
-                const joinColumnIndex = treeSearch(table[1], joinInfo.columnName);
-                const joinTableColumnIndex = treeSearch(joinTable[1], joinInfo.referenceColumn);
-        
-                if (joinColumnIndex === -1 || joinTableColumnIndex === -1) {
-                    console.log('JOIN COLUMN OR REFERENCE COLUMN NOT FOUND!');
-                    return {columnIndex: 0, rows: [], success: false, errorMessage: 'JOIN COLUMN OR REFERENCE COLUMN NOT FOUND!'};
-                }
-        
-                for (let i = 2; i < table.length; i++) {
-                    const joinValue = table[i][joinColumnIndex];
-                    for (let j = 2; j < joinTable.length; j++) {
-                        const joinTableValue = joinTable[j][joinTableColumnIndex];
-                        if (joinValue === joinTableValue) {
-                            
-                            if (!indexMap.has(i)) {
-                                indexMap.set(i, []);
-                            }
-                            indexMap.get(i).push(i);
-                            break;
-                        }
-                    }
-                }
+        for (let i = 2; i < table.length; i++) {
+            const value = table[i][columnIndex];
+            if (!indexMap.has(value)) {
+                indexMap.set(value, []);
             }
-        } else {
-            // Se indexan los valores de la columna especificada en la condición
-            for (let i = 2; i < table.length; i++) {
-                const value = table[i][columnIndex];
-                if (!indexMap.has(value)) {
-                    indexMap.set(value, []);
-                }
-                indexMap.get(value).push(i);
-            }
+            indexMap.get(value).push(i);
         }
+
+        let rows = [];
 
         let escapedPattern, regexPattern, regex;
 
