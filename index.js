@@ -132,43 +132,43 @@ export class DB {
 
         dbMethods.insert(table[0], headers);
 
-        if(foreignKeys !== undefined) {
+        if (foreignKeys !== undefined) {
 
             let foreignColumns = [];
 
             table[0][1]["references"] = []
 
-            for(const foreignKey of foreignKeys) {
+            for (const foreignKey of foreignKeys) {
 
-                let {name, columnName, referenceTable, referenceColumn} = foreignKey;
+                let { name, columnName, referenceTable, referenceColumn } = foreignKey;
 
-                if(name === undefined) {
+                if (name === undefined) {
                     name = referenceTable.concat(`_${referenceColumn}`);
                 }
 
-                    table[0][1]["references"].push({name, columnName, referenceTable, referenceColumn})
+                table[0][1]["references"].push({ name, columnName, referenceTable, referenceColumn })
 
                 dbMethods.insert(foreignColumns, foreignKey.columnName)
             }
-            
-            let allcolumns = [...columns,...foreignColumns]
 
-            if(!dbMethods.hasDuplicity(allcolumns)) {
+            let allcolumns = [...columns, ...foreignColumns]
+
+            if (!dbMethods.hasDuplicity(allcolumns)) {
                 for (let i = 0; i < allcolumns.length; i++) {
                     table[1][i + 1] = allcolumns[i];
                 }
-            }else {
+            } else {
                 console.log('TABLE WITH NAME "' + tableName + '" CANNOT BE CREATED. DUPLICATED COLUMNS FOUND!');
                 return false;
             }
 
-        }else {
+        } else {
 
-            if(!dbMethods.hasDuplicity(columns)) {
+            if (!dbMethods.hasDuplicity(columns)) {
                 for (let i = 0; i < columns.length; i++) {
                     table[1][i + 1] = columns[i];
                 }
-            }else {
+            } else {
                 console.log('TABLE WITH NAME "' + tableName + '" CANNOT BE CREATED. DUPLICATED COLUMNS FOUND!');
                 return false;
             }
@@ -226,7 +226,7 @@ export class DB {
     * @param {String} operation The operation to perform on the table.
     * @param {String} target The target to alter.
     */
-    async alterTable({tableName, operation, target, options = {save: false}, elements}) {
+    async alterTable({ tableName, operation, target, options = { save: false }, elements }) {
         if (!this.initialized) {
             console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -249,29 +249,29 @@ export class DB {
 
                     case 'COLUMN':
 
-                    elements.forEach(async (column) => {
-                        if (treeSearch(table[1], column.name)===-1) {
-                            dbMethods.insert(table[1], column.name);
-                            if (column.void) {
-                                for (let i = 2; i < table.length; i++) {
-                                    dbMethods.insert(table[i], null);
+                        elements.forEach(async (column) => {
+                            if (treeSearch(table[1], column.name) === -1) {
+                                dbMethods.insert(table[1], column.name);
+                                if (column.void) {
+                                    for (let i = 2; i < table.length; i++) {
+                                        dbMethods.insert(table[i], null);
+                                    }
                                 }
+
+                                if (options.save) {
+                                    await this.save();
+                                }
+                            } else {
+                                console.log('column already exists');
                             }
 
-                            if (options.save) {
-                                await this.save();
-                            }
-                        }else {
-                            console.log('column already exists');
-                        }
-
-                    })
+                        })
 
                         break;
 
                     case 'REFERENCE':
 
-                            
+
 
                         break;
 
@@ -503,30 +503,30 @@ export class DB {
         }
 
         let columnNames = table[1];
-        let elementsValue = table[0][1].elements; 
-        let row = [elementsValue]; 
-        
+        let elementsValue = table[0][1].elements;
+        let row = [elementsValue];
+
         for (let i = 1; i < columnNames.length; i++) {
             let columnName = columnNames[i];
             if (columns.includes(columnName)) {
                 let valueIndex = treeSearch(columns, columnName);
-                if(values[valueIndex] !== undefined) {
+                if (values[valueIndex] !== undefined) {
                     dbMethods.insert(row, values[valueIndex])
-                }else{
+                } else {
                     dbMethods.insert(row, null);
                 }
             } else {
                 dbMethods.insert(row, null);
             }
         }
-    
+
         dbMethods.insert(table, row);
         table[0][1].elements++; // Actualizar el contador de elements en los encabezados de la tabla
-    
+
         await this.save();
-    
+
         console.log('CREATED ROW WITH "' + table[1][0] + '" VALUE = "' + table[table.length - 1][0] + '"')
-    
+
         return true;
     }
 
@@ -554,7 +554,7 @@ export class DB {
 
         const { columnIndex, rows, success, errorMessage } = await this.findRowsByCondition({ tableName, condition, operator, conditionValue });
 
-        if(!success) {
+        if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
         }
 
@@ -603,8 +603,8 @@ export class DB {
 
         const { columnIndex, rows, success, errorMessage } = await this.findRowsByCondition({ tableName, condition, operator, conditionValue });
 
-        if(!success) {
-            return [['EXCEPTION ENCOUNTER'],[errorMessage]];
+        if (!success) {
+            return [['EXCEPTION ENCOUNTER'], [errorMessage]];
         }
 
         if (columnIndex === undefined || columnIndex === -1) {
@@ -623,20 +623,20 @@ export class DB {
             columnIndexes[column] = index;
         });
 
-        let setColumnExist = {exist: true, columnName: null};
+        let setColumnExist = { exist: true, columnName: null };
 
         const setIndexes = set.map(column => {
             const index = columnIndexes[column];
             if (index === undefined) {
                 console.log('ROW OR ROWS CANNOT BE UPDATED! CANNOT SET A VALUE TO COLUMN "' + column + '" BECAUSE IT DOES\'T EXISTS!');
-                setColumnExist = { exist: false, columnName: column}
+                setColumnExist = { exist: false, columnName: column }
             }
             return index;
         });
 
-        if(setColumnExist.exist === false) {
-            return [['EXCEPTION ENCOUNTER'],['ROW OR ROWS CANNOT BE UPDATED! CANNOT SET A VALUE TO COLUMN "' + setColumnExist.columnName + '" BECAUSE IT DOES\'T EXISTS!']]
-        }   
+        if (setColumnExist.exist === false) {
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! CANNOT SET A VALUE TO COLUMN "' + setColumnExist.columnName + '" BECAUSE IT DOES\'T EXISTS!']]
+        }
 
         let updated = false;
         let finalMsg = '';
@@ -653,7 +653,7 @@ export class DB {
                         actualized = true;
                     }
                 }
-                if(actualized) {
+                if (actualized) {
                     totalUpdated++;
                 }
             }
@@ -679,7 +679,7 @@ export class DB {
     * @param {number} limit - The maximum number of rows to retrieve.
     * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
     */
-    async find({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue, offset = 0, limit, orderBy = this.getOneTable(tableName)[1][0], asc = true }) {
+    async find({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], joins, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue, offset = 0, limit, orderBy = this.getOneTable(tableName)[1][0], asc = true }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -697,15 +697,22 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['ORDER COLUMN "' + orderBy + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!']];
         }
 
+        if (joins) {
+            table = await this.joinTables(this.getOneTable(tableName), joins);
+            if(columns === undefined) {
+                columns = table[1]
+            }
+        }
+
         for (let i = 0; i < columns.length; i++) {
             if (!table[1].includes(columns[i])) {
                 return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columns[i] + '" IS NOT A VALID COLUMN!']];
             }
         }
 
-        const { rows, success, errorMessage } = await this.findRowsByCondition({ tableName, columns, distinct, condition, operator, conditionValue, orderBy, asc });
+        const { rows, success, errorMessage } = await this.findRowsByCondition({ table, columns, distinct, condition, operator, conditionValue, orderBy, asc });
 
-        if(!success) {
+        if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
         }
 
@@ -732,7 +739,7 @@ export class DB {
                 }
                 rows = distinctRows;
             }
-    
+
             rows.sort((rowIndexA, rowIndexB) => {
                 const valueA = table[rowIndexA][orderColumnIndex];
                 const valueB = table[rowIndexB][orderColumnIndex];
@@ -776,6 +783,44 @@ export class DB {
 
         return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS NOT FOUND!']]
 
+
+    }
+
+    async joinTables(originTable, joins) {
+
+        let joinedTables = originTable;
+
+        for (const join of joins) {
+            const { referenceTable, referenceColumn, columnName } = join;
+            const joinedTable = this.getOneTable(referenceTable);
+            const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn);
+            if (referenceColumnIndex === -1) {
+                console.log('REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!');
+                return [['EXCEPTION ENCOUNTER'], ['REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!']];
+            }
+            const columnIndex = treeSearch(joinedTables[1], columnName);
+            if (columnIndex === -1) {
+                console.log('COLUMN "' + columnName + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!');
+                return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columnName + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!']];
+            }
+            for (let i = 2; i < joinedTables.length; i++) {
+                const value = joinedTables[i][columnIndex];
+                for (let j = 2; j < joinedTable.length; j++) {
+                    if (joinedTable[j][referenceColumnIndex] === value) {
+                        joinedTables[i] = joinedTables[i].concat(joinedTable[j].slice(0));
+                    }
+                }
+            }
+        }
+
+        originTable[1] = originTable[1].map(column => `${originTable[0][0]}.${column}`)
+
+        for (const join of joins) {
+            const joinedTableColumns = this.getOneTable(join.referenceTable)[1];
+            joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${join.referenceTable}.${column}`));
+        }
+
+        return joinedTables;
     }
 
     /**
@@ -783,19 +828,17 @@ export class DB {
      * @method findRowsByCondition
      * @description Searches for rows that meet a certain condition in a table.
      * @param {string} tableName - The name of the table.
-     * @param {Boolean} distinct - Whether the search should disregard duplicates.
-     * @param {Array<String>} columns - The list of columns to be returned.
      * @param {string} condition - The column used as a condition.
      * @param {string} operator - The logical operator to filter the results.
      * @param {any} conditionValue - The value used for the condition.
      * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
-    async findRowsByCondition({tableName, condition, operator, conditionValue}) {
-        const table = this.getOneTable(tableName);
+    async findRowsByCondition({ table, condition, operator, conditionValue }) {
+
         const columnIndex = treeSearch(table[1], condition);
         if (columnIndex === -1) {
-            console.log('CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!');
-            return {columnIndex: 0, rows: [], success: false, errorMessage: 'CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!'};
+            console.log('CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!');
+            return { columnIndex: 0, rows: [], success: false, errorMessage: 'CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!' };
         }
 
         // Se indexan los valores de la columna especificada en la condición
@@ -812,23 +855,23 @@ export class DB {
 
         let escapedPattern, regexPattern, regex;
 
-        if(conditionValue === undefined) {
+        if (conditionValue === undefined) {
 
             // Obtiene todas las filas de la tabla sin filtrar (FIND "columnas" IN "tabla")
             for (let i = 2; i < table.length; i++) {
                 rows.push(i);
             }
 
-        }else {
+        } else {
             switch (operator.toUpperCase()) {
                 case '>':
-                    if(Array.isArray(conditionValue)){
+                    if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value > Math.max(...conditionValue)) {
                                 rows = rows.concat(indices);
                             }
                         }
-                    }else{
+                    } else {
                         for (let [value, indices] of indexMap) {
                             if (value > conditionValue) {
                                 rows = rows.concat(indices);
@@ -837,13 +880,13 @@ export class DB {
                     }
                     break;
                 case '<':
-                    if(Array.isArray(conditionValue)){
+                    if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value < Math.min(...conditionValue)) {
                                 rows = rows.concat(indices);
                             }
                         }
-                    }else{
+                    } else {
                         for (let [value, indices] of indexMap) {
                             if (value < conditionValue) {
                                 rows = rows.concat(indices);
@@ -852,13 +895,13 @@ export class DB {
                     }
                     break;
                 case '>=':
-                    if(Array.isArray(conditionValue)){
+                    if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value >= Math.max(...conditionValue)) {
                                 rows = rows.concat(indices);
                             }
                         }
-                    }else{
+                    } else {
                         for (let [value, indices] of indexMap) {
                             if (value >= conditionValue) {
                                 rows = rows.concat(indices);
@@ -867,13 +910,13 @@ export class DB {
                     }
                     break;
                 case '<=':
-                    if(Array.isArray(conditionValue)){
+                    if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value <= Math.min(...conditionValue)) {
                                 rows = rows.concat(indices);
                             }
                         }
-                    }else{
+                    } else {
                         for (let [value, indices] of indexMap) {
                             if (value <= conditionValue) {
                                 rows = rows.concat(indices);
@@ -882,13 +925,13 @@ export class DB {
                     }
                     break;
                 case 'IN':
-                    if (Array.isArray(conditionValue)){
-                        for(let [value, indices] of indexMap) {
+                    if (Array.isArray(conditionValue)) {
+                        for (let [value, indices] of indexMap) {
                             if (conditionValue.includes(value)) {
                                 rows = rows.concat(indices);
                             }
                         }
-                    }else{
+                    } else {
                         if (!indexMap.has(conditionValue)) {
                             rows = [];
                         } else {
@@ -897,13 +940,13 @@ export class DB {
                     }
                     break;
                 case 'NOT IN':
-                    if (Array.isArray(conditionValue)){
-                        for(let [value, indices] of indexMap) {
+                    if (Array.isArray(conditionValue)) {
+                        for (let [value, indices] of indexMap) {
                             if (!conditionValue.includes(value)) {
                                 rows = rows.concat(indices);
                             }
                         }
-                    }else{
+                    } else {
                         for (let [value, indices] of indexMap) {
                             if (value !== conditionValue) {
                                 rows = rows.concat(indices);
@@ -912,7 +955,7 @@ export class DB {
                     }
                     break;
                 case 'LIKE':
-                    if(conditionValue === null || !isNaN(conditionValue)) {
+                    if (conditionValue === null || !isNaN(conditionValue)) {
                         if (!indexMap.has(conditionValue)) {
                             rows = [];
                         } else {
@@ -920,13 +963,13 @@ export class DB {
                         }
                         break;
                     }
-    
+
                     escapedPattern = conditionValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    
+
                     regexPattern = escapedPattern.replace(/%/g, '.*');
-    
-                    regex = new RegExp(`^${regexPattern}$`, 'ui'); 
-        
+
+                    regex = new RegExp(`^${regexPattern}$`, 'ui');
+
                     for (let [value, indices] of indexMap) {
                         if (regex.test(value)) {
                             rows = rows.concat(indices);
@@ -934,7 +977,7 @@ export class DB {
                     }
                     break;
                 case 'NOT LIKE':
-                    if(conditionValue === null || !isNaN(conditionValue)) {
+                    if (conditionValue === null || !isNaN(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value !== conditionValue) {
                                 rows = rows.concat(indices);
@@ -943,11 +986,11 @@ export class DB {
                         break;
                     }
                     escapedPattern = conditionValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    
+
                     regexPattern = escapedPattern.replace(/%/g, '.*');
-    
-                    regex = new RegExp(`^${regexPattern}$`, 'ui'); 
-        
+
+                    regex = new RegExp(`^${regexPattern}$`, 'ui');
+
                     for (let [value, indices] of indexMap) {
                         if (!regex.test(value)) {
                             rows = rows.concat(indices);
