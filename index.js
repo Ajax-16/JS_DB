@@ -710,7 +710,7 @@ export class DB {
             }
         }
 
-        const { rows, success, errorMessage } = await this.findRowsByCondition({ table, columns, distinct, condition, operator, conditionValue, orderBy, asc });
+        let { rows, success, errorMessage } = await this.findRowsByCondition({ table, columns, distinct, condition, operator, conditionValue, orderBy, asc });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -788,20 +788,25 @@ export class DB {
 
     async joinTables(originTable, joins) {
 
+        originTable[1] = originTable[1].map(column => `${originTable[0][0]}.${column}`)
+
         let joinedTables = originTable;
 
         for (const join of joins) {
             const { referenceTable, referenceColumn, columnName } = join;
             const joinedTable = this.getOneTable(referenceTable);
-            const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn);
+            const joinedTableColumns = joinedTable[1];
+            joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${join.referenceTable}.${column}`));
+            const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn.split('.').pop());
             if (referenceColumnIndex === -1) {
                 console.log('REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!');
                 return [['EXCEPTION ENCOUNTER'], ['REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!']];
             }
+
             const columnIndex = treeSearch(joinedTables[1], columnName);
             if (columnIndex === -1) {
-                console.log('COLUMN "' + columnName + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!');
-                return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columnName + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!']];
+                console.log('COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!');
+                return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!']];
             }
             for (let i = 2; i < joinedTables.length; i++) {
                 const value = joinedTables[i][columnIndex];
@@ -811,13 +816,6 @@ export class DB {
                     }
                 }
             }
-        }
-
-        originTable[1] = originTable[1].map(column => `${originTable[0][0]}.${column}`)
-
-        for (const join of joins) {
-            const joinedTableColumns = this.getOneTable(join.referenceTable)[1];
-            joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${join.referenceTable}.${column}`));
         }
 
         return joinedTables;
