@@ -48,6 +48,7 @@ export class DB {
     constructor(name, cacheBufferSize = 65536) {
         this.name = name;
         this.cache = new Cache(cacheBufferSize);
+        fs.mkdir(getDbFolder(), {recursive: true});
     }
 
     /**
