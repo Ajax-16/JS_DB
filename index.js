@@ -680,7 +680,7 @@ export class DB {
     * @param {number} limit - The maximum number of rows to retrieve.
     * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
     */
-    async find({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], joins, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue, offset = 0, limit, orderBy = this.getOneTable(tableName)[1][0], asc = true }) {
+    async find({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy = this.getOneTable(tableName)[1][0], asc = true }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -834,7 +834,22 @@ export class DB {
      */
     async findRowsByCondition({ table, condition, operator, conditionValue }) {
 
-        const columnIndex = treeSearch(table[1], condition);
+        let rows = [];
+
+        let escapedPattern, regexPattern, regex;
+
+        if (condition === undefined || conditionValue === undefined) {
+
+            // Obtiene todas las filas de la tabla sin filtrar (FIND "columnas" IN "tabla")
+            for (let i = 2; i < table.length; i++) {
+                rows.push(i);
+            }
+
+            return {rows, success: true};
+
+        } else {
+
+            const columnIndex = treeSearch(table[1], condition);
         if (columnIndex === -1) {
             console.log('CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!');
             return { columnIndex: 0, rows: [], success: false, errorMessage: 'CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!' };
@@ -850,18 +865,6 @@ export class DB {
             indexMap.get(value).push(i);
         }
 
-        let rows = [];
-
-        let escapedPattern, regexPattern, regex;
-
-        if (conditionValue === undefined) {
-
-            // Obtiene todas las filas de la tabla sin filtrar (FIND "columnas" IN "tabla")
-            for (let i = 2; i < table.length; i++) {
-                rows.push(i);
-            }
-
-        } else {
             switch (operator.toUpperCase()) {
                 case '>':
                     if (Array.isArray(conditionValue)) {
@@ -1012,9 +1015,8 @@ export class DB {
                     }
                     break;
             }
+            return { columnIndex, rows, success: true };
         }
-
-        return { columnIndex, rows, success: true };
     }
 
     /**
