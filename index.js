@@ -48,7 +48,7 @@ export class DB {
     constructor(name, cacheBufferSize = 65536) {
         this.name = name;
         this.cache = new Cache(cacheBufferSize);
-        fs.mkdir(getDbFolder(), {recursive: true});
+        fs.mkdir(getDbFolder(), { recursive: true });
     }
 
     /**
@@ -680,7 +680,7 @@ export class DB {
     * @param {number} limit - The maximum number of rows to retrieve.
     * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
     */
-    async find({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy = this.getOneTable(tableName)[1][0], asc = true }) {
+    async find({ tableName, distinct = false, columns, joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy = this.getOneTable(tableName)[1][0], asc = true }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -700,8 +700,12 @@ export class DB {
 
         if (joins) {
             table = await this.joinTables(this.getOneTable(tableName), joins);
-            if(columns === undefined) {
+            if(columns=== undefined) {
                 columns = table[1]
+            }
+        }else {
+            if(columns===undefined) {
+                columns = this.getOneTable(tableName)[1];
             }
         }
 
@@ -845,25 +849,25 @@ export class DB {
                 rows.push(i);
             }
 
-            return {rows, success: true};
+            return { rows, success: true };
 
         } else {
 
             const columnIndex = treeSearch(table[1], condition);
-        if (columnIndex === -1) {
-            console.log('CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!');
-            return { columnIndex: 0, rows: [], success: false, errorMessage: 'CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!' };
-        }
-
-        // Se indexan los valores de la columna especificada en la condición
-        const indexMap = new Map();
-        for (let i = 2; i < table.length; i++) {
-            const value = table[i][columnIndex];
-            if (!indexMap.has(value)) {
-                indexMap.set(value, []);
+            if (columnIndex === -1) {
+                console.log('CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!');
+                return { columnIndex: 0, rows: [], success: false, errorMessage: 'CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!' };
             }
-            indexMap.get(value).push(i);
-        }
+
+            // Se indexan los valores de la columna especificada en la condición
+            const indexMap = new Map();
+            for (let i = 2; i < table.length; i++) {
+                const value = table[i][columnIndex];
+                if (!indexMap.has(value)) {
+                    indexMap.set(value, []);
+                }
+                indexMap.get(value).push(i);
+            }
 
             switch (operator.toUpperCase()) {
                 case '>':
