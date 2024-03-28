@@ -703,6 +703,11 @@ export class DB {
             if(columns=== undefined) {
                 columns = table[1]
             }
+
+            if(table[0][0]=== 'EXCEPTION ENCOUNTER'){
+                return table;
+            }
+
         }else {
             if(columns===undefined) {
                 columns = this.getOneTable(tableName)[1];
@@ -783,7 +788,7 @@ export class DB {
                 result = result.slice(0, limit);
             }
 
-            return [[tableName], columns, ...result];
+            return [[table[0][0]], columns, ...result];
         }
 
         return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS NOT FOUND!']]
@@ -797,10 +802,18 @@ export class DB {
 
         let joinedTables = originTable;
 
+        const tablesAlreadyJoined = originTable;
+
         for (const join of joins) {
             const { referenceTable, referenceColumn, columnName } = join;
             const joinedTable = this.getOneTable(referenceTable);
+            if(tablesAlreadyJoined.includes(joinedTable)) {
+                console.log('TABLE "' + joinedTable[0][0] + '" IS ALREADY JOINED!');
+                return [['EXCEPTION ENCOUNTER'], ['TABLE "' + joinedTable[0][0] + '" IS ALREADY JOINED!']];
+            }
+            tablesAlreadyJoined.push(joinedTable);
             const joinedTableColumns = joinedTable[1];
+            joinedTables[0][0] = joinedTables[0][0].concat(` x ${referenceTable}`)
             joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${join.referenceTable}.${column}`));
             const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn.split('.').pop());
             if (referenceColumnIndex === -1) {
@@ -813,14 +826,18 @@ export class DB {
                 console.log('COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!');
                 return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!']];
             }
+            
+            let resultantJoinedTables = joinedTables.slice(0, 2);
+
             for (let i = 2; i < joinedTables.length; i++) {
                 const value = joinedTables[i][columnIndex];
                 for (let j = 2; j < joinedTable.length; j++) {
                     if (joinedTable[j][referenceColumnIndex] === value) {
-                        joinedTables[i] = joinedTables[i].concat(joinedTable[j].slice(0));
+                        resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j])) 
                     }
                 }
             }
+            joinedTables = resultantJoinedTables;
         }
 
         return joinedTables;
