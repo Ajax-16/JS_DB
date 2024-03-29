@@ -553,7 +553,7 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST!']];
         }
 
-        const { columnIndex, rows, success, errorMessage } = await this.findRowsByCondition({ tableName, condition, operator, conditionValue });
+        const { columnIndex, rows, success, errorMessage } = await this.findRowsByCondition({ table, condition, operator, conditionValue });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -601,8 +601,9 @@ export class DB {
             console.log('ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
+        const table = this.getOneTable(tableName);
 
-        const { columnIndex, rows, success, errorMessage } = await this.findRowsByCondition({ tableName, condition, operator, conditionValue });
+        const { columnIndex, rows, success, errorMessage } = await this.findRowsByCondition({ table, condition, operator, conditionValue });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -618,7 +619,6 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['NO ROWS FOUND WITH CONDITION "' + condition + '" ' + operator + ' "' + conditionValue + '"!']];
         }
 
-        const table = this.getOneTable(tableName);
         const columnIndexes = {};
         table[1].forEach((column, index) => {
             columnIndexes[column] = index;
@@ -813,7 +813,7 @@ export class DB {
             }
             tablesAlreadyJoined.push(joinedTable);
             const joinedTableColumns = joinedTable[1];
-            joinedTables[0][0] = joinedTables[0][0].concat(` x ${referenceTable}`)
+            joinedTables[0][0] = joinedTables[0][0].concat(`|${referenceTable}`)
             joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${join.referenceTable}.${column}`));
             const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn.split('.').pop());
             if (referenceColumnIndex === -1) {
