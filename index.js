@@ -141,15 +141,15 @@ export class DB {
 
             for (const foreignKey of foreignKeys) {
 
-                let { name, columnName, referenceTable, referenceColumn } = foreignKey;
+                let { name, rightColumn, referenceTable, leftColumn } = foreignKey;
 
                 if (name === undefined) {
-                    name = referenceTable.concat(`_${referenceColumn}`);
+                    name = referenceTable.concat(`_${leftColumn}`);
                 }
 
-                table[0][1]["references"].push({ name, columnName, referenceTable, referenceColumn })
+                table[0][1]["references"].push({ name, rightColumn, referenceTable, leftColumn })
 
-                dbMethods.insert(foreignColumns, foreignKey.columnName)
+                dbMethods.insert(foreignColumns, foreignKey.rightColumn)
             }
 
             let allcolumns = [...columns, ...foreignColumns]
@@ -503,14 +503,14 @@ export class DB {
             columns = table[1].slice(1);
         }
 
-        let columnNames = table[1];
+        let rightColumns = table[1];
         let elementsValue = table[0][1].elements;
         let row = [elementsValue];
 
-        for (let i = 1; i < columnNames.length; i++) {
-            let columnName = columnNames[i];
-            if (columns.includes(columnName)) {
-                let valueIndex = treeSearch(columns, columnName);
+        for (let i = 1; i < rightColumns.length; i++) {
+            let rightColumn = rightColumns[i];
+            if (columns.includes(rightColumn)) {
+                let valueIndex = treeSearch(columns, rightColumn);
                 if (values[valueIndex] !== undefined) {
                     dbMethods.insert(row, values[valueIndex])
                 } else {
@@ -624,19 +624,19 @@ export class DB {
             columnIndexes[column] = index;
         });
 
-        let setColumnExist = { exist: true, columnName: null };
+        let setColumnExist = { exist: true, rightColumn: null };
 
         const setIndexes = set.map(column => {
             const index = columnIndexes[column];
             if (index === undefined) {
                 console.log('ROW OR ROWS CANNOT BE UPDATED! CANNOT SET A VALUE TO COLUMN "' + column + '" BECAUSE IT DOES\'T EXISTS!');
-                setColumnExist = { exist: false, columnName: column }
+                setColumnExist = { exist: false, rightColumn: column }
             }
             return index;
         });
 
         if (setColumnExist.exist === false) {
-            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! CANNOT SET A VALUE TO COLUMN "' + setColumnExist.columnName + '" BECAUSE IT DOES\'T EXISTS!']]
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! CANNOT SET A VALUE TO COLUMN "' + setColumnExist.rightColumn + '" BECAUSE IT DOES\'T EXISTS!']]
         }
 
         let updated = false;
@@ -805,7 +805,7 @@ export class DB {
         const tablesAlreadyJoined = originTable;
 
         for (const join of joins) {
-            const { referenceTable, referenceColumn, columnName } = join;
+            const { referenceTable, leftColumn, rightColumn } = join;
             const joinedTable = this.getOneTable(referenceTable);
             if(tablesAlreadyJoined.includes(joinedTable)) {
                 console.log('TABLE "' + joinedTable[0][0] + '" IS ALREADY JOINED!');
@@ -815,24 +815,26 @@ export class DB {
             const joinedTableColumns = joinedTable[1];
             joinedTables[0][0] = joinedTables[0][0].concat(`|${referenceTable}`)
             joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${join.referenceTable}.${column}`));
-            const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn.split('.').pop());
-            if (referenceColumnIndex === -1) {
-                console.log('REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!');
-                return [['EXCEPTION ENCOUNTER'], ['REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!']];
+
+            const leftColumnIndex = treeSearch(joinedTables[1], leftColumn);
+            if (leftColumnIndex === -1) {
+                console.log('COLUMN "' + leftColumn + '" DOESN\'T EXIST ON ANY JOINED TABLES!');
+                return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + leftColumn + '" DOESN\'T EXIST ON ANY JOINED TABLES!']];
             }
 
-            const columnIndex = treeSearch(joinedTables[1], columnName);
-            if (columnIndex === -1) {
-                console.log('COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!');
-                return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!']];
+            const rightColumnIndex = treeSearch(joinedTable[1], rightColumn.split('.').pop());
+            if (rightColumnIndex === -1) {
+                console.log('COLUMN "' + rightColumn + '" DOESN\'T EXIST ON TABLE "' + joinedTable[0][0] + '"');
+                return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + rightColumn + '" DOESN\'T EXIST ON ANY JOINED TABLES!']];
             }
             
             let resultantJoinedTables = joinedTables.slice(0, 2);
 
             for (let i = 2; i < joinedTables.length; i++) {
-                const value = joinedTables[i][columnIndex];
+                console.log(joinedTables[i][leftColumnIndex])
+                const value = joinedTables[i][leftColumnIndex];
                 for (let j = 2; j < joinedTable.length; j++) {
-                    if (joinedTable[j][referenceColumnIndex] === value) {
+                    if (joinedTable[j][rightColumnIndex] === value) {
                         resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j])) 
                     }
                 }
