@@ -709,7 +709,10 @@ export class DB {
 
         }else {
             if(columns===undefined) {
-                columns = this.getOneTable(tableName)[1];
+                columns = table[1];
+            }
+            if(condition===undefined) {
+                condition = table[1][0];
             }
         }
 
