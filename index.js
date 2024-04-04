@@ -6,7 +6,7 @@ import path from 'path';
 
 /**
  * @class DB
- * @description Represents a reference to an Ajax Data Base.
+ * @description Represents a reference to a Nue Data Base.
  */
 export class DB {
 
@@ -1118,7 +1118,7 @@ export async function describeDatabase(currentDb, dbName) {
  * @private
  */
 function getDbFolder() {
-    const baseDir = process.platform === 'win32' ? 'C:/ajaxdb/' : '/var/ajaxdb/';
+    const baseDir = process.platform === 'win32' ? 'C:/nuedb/' : '/var/nuedb/';
     const dbFolder = path.join(baseDir, 'data');
 
     return dbFolder;
