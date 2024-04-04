@@ -1,14 +1,14 @@
 {
-  "name": "ajaxdb-core",
-  "version": "1.1.2",
-  "description": "Not-Object-based JS database management system",
+  "name": "nuedb-core",
+  "version": "0.0.0",
+  "description": "Core Engine for NueDB, a database management system based on nodejs",
   "main": "index.js",
   "scripts": {
     "start": "nodemon --watch ./ -e js,json index.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ajax-16/ajaxdb-core.git"
+    "url": "git+https://github.com/Ajax-16/nuedb-core.git"
   },
   "keywords": [],
   "author": "David Bernárdez Luque",
