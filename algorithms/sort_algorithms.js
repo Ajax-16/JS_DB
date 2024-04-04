@@ -1,4 +1,4 @@
-import arrayMethods from "ajaxdb-core/algorithms/array_methods.js";
+import arrayMethods from "./array_methods.js";
 
 export function bubbleSort(array){
     

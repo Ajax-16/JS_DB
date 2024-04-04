@@ -1,6 +1,5 @@
 import dbMethods from './algorithms/array_methods.js';
 import { treeSearch } from './algorithms/tree_search.js';
-import { bubbleSort, quickSort } from './algorithms/sort_algorithms.js';
 import { Cache } from './utils/cache.js';
 import { promises as fs } from 'fs';
 import path from 'path';
