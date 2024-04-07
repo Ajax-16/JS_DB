@@ -617,7 +617,7 @@ export class DB {
     * @param {number} limit - The maximum number of rows to retrieve.
     * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
     */
-    async find({ tableName, distinct = false, columns, joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy = this.getOneTable(tableName)[1][0], asc = true }) {
+    async find({ tableName, distinct = false, columns, joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy, asc = true }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -631,23 +631,19 @@ export class DB {
 
         if (joins) {
             table = await this.joinTables(this.getOneTable(tableName), joins);
-            if(columns=== undefined) {
-                columns = table[1]
-            }
-
             if(table[0][0]=== 'EXCEPTION ENCOUNTER'){
                 return table;
             }
-
-        }else {
-            if(columns===undefined) {
-                columns = table[1];
-            }
-            if(condition===undefined) {
-                condition = table[1][0];
-            }
         }
 
+        if(columns===undefined) {
+            columns = table[1];
+        }
+
+        if(orderBy===undefined) {
+            orderBy = table[1][0]
+        }
+        
         for (let i = 0; i < columns.length; i++) {
             if (!table[1].includes(columns[i])) {
                 return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columns[i] + '" IS NOT A VALID COLUMN!']];

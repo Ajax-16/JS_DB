@@ -71,7 +71,7 @@ export default {
         const arrCopy = [];
         for (let i = 0; i < arr.length; i++) {
             if (Array.isArray(arr[i])) {
-                arrCopy[i] = deepCopy(arr[i]);
+                arrCopy[i] = this.deepCopy(arr[i]);
             } else {
                 arrCopy[i] = arr[i]
             }
