@@ -370,7 +370,7 @@ export class DB {
             console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
-        let tablesCopy = [...this.tables];
+        let tablesCopy = dbMethods.deepCopy(this.tables);
         for (let i = 0; i < tablesCopy.length; i++) {
             tablesCopy[i][0] = tablesCopy[i][0].slice(0, 1);
         }
@@ -392,68 +392,6 @@ export class DB {
             dbMethods.insert(tableNames, this.tables[i][0][0]);
         }
         return tableNames;
-    }
-
-    /**
-    * @deprecated
-    * @async
-    * @method showOneTable
-    * @description Retrieves data from a specified table, allowing for column selection, distinct rows, offset, and limit.
-    * @param {string} tableName - The name of the table.
-    * @param {Boolean} [distinct=false] - Whether to retrieve distinct rows.
-    * @param {Array<String>} [columns=this.getOneTable(tableName)[1]] - The list of columns to retrieve. All columns by default.
-    * @param {number} [offset=0] - The starting index from which to retrieve rows. 0 by default.
-    * @param {number} limit - The maximum number of rows to retrieve.
-    * @returns {Promise<Array<Array<any>>>} An array containing the retrieved data, or an array indicating an exception encounter if the table is not found.
-    */
-    async showOneTable({ tableName, distinct = false, columns = this.getOneTable(tableName)[1], offset = 0, limit }) {
-        if (!this.initialized) {
-            console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
-            return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
-        }
-
-        const tableNames = this.showAllTableNames();
-        const position = treeSearch(tableNames, tableName);
-
-        if (position === -1) {
-            return [['EXCEPTION ENCOUNTER'], ['TABLE "' + tableName + '" NOT FOUND!']];
-        }
-
-        let tableCopy = [...table];
-        tableCopy[0] = tableCopy[0].slice(0, 1);
-        const tableHeaders = tableCopy.slice(0, 2);
-
-        // Filtrar las filas para incluir solo las columnas seleccionadas
-        const selectedColumnIndices = columns.map(column => tableHeaders[1].indexOf(column));
-        const filteredDataRows = tableCopy.slice(2).map(row => selectedColumnIndices.map(index => row[index]));
-
-        // Aplicar offset y limit si se especifican
-        let dataRows = filteredDataRows;
-        if (limit !== undefined) {
-            dataRows = dataRows.slice(offset, offset + limit);
-        } else if (offset > 0) {
-            dataRows = dataRows.slice(offset);
-        }
-
-        // Construir la respuesta final
-        const selectedTableHeaders = [tableHeaders[0], columns];
-        const result = [selectedTableHeaders[0], selectedTableHeaders[1], ...dataRows];
-
-        if (distinct !== false) {
-            // Manejar la opción distinct si está activada
-            const distinctRows = [];
-            const set = new Set();
-            for (const row of result.slice(2)) {
-                const rowSignature = row.join('-'); // Crear una firma única para la fila
-                if (!set.has(rowSignature)) {
-                    distinctRows.push(row);
-                    set.add(rowSignature);
-                }
-            }
-            return [selectedTableHeaders[0], selectedTableHeaders[1], ...distinctRows];
-        }
-
-        return result;
     }
 
     /**
@@ -691,12 +629,6 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['TABLE ' + tableName + ' DOESN\'T EXIST!']];
         }
 
-        const orderColumnIndex = treeSearch(table[1], orderBy);
-        if (orderColumnIndex === -1) {
-            console.log('ORDER COLUMN "' + orderBy + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!');
-            return [['EXCEPTION ENCOUNTER'], ['ORDER COLUMN "' + orderBy + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!']];
-        }
-
         if (joins) {
             table = await this.joinTables(this.getOneTable(tableName), joins);
             if(columns=== undefined) {
@@ -722,7 +654,7 @@ export class DB {
             }
         }
 
-        let { rows, success, errorMessage } = await this.findRowsByCondition({ table, columns, distinct, condition, operator, conditionValue, orderBy, asc });
+        let { rows, success, errorMessage } = await this.findRowsByCondition({ table, condition, operator, conditionValue });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -750,6 +682,12 @@ export class DB {
                     }
                 }
                 rows = distinctRows;
+            }
+
+            const orderColumnIndex = treeSearch(table[1], orderBy);
+            if (orderColumnIndex === -1) {
+                console.log('ORDER COLUMN "' + orderBy + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!');
+                return [['EXCEPTION ENCOUNTER'], ['ORDER COLUMN "' + orderBy + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!']];
             }
 
             rows.sort((rowIndexA, rowIndexB) => {
@@ -800,6 +738,8 @@ export class DB {
 
     async joinTables(originTable, joins) {
 
+        originTable = dbMethods.deepCopy(originTable);
+    
         originTable[1] = originTable[1].map(column => `${originTable[0][0]}.${column}`)
 
         let joinedTables = originTable;
@@ -808,7 +748,7 @@ export class DB {
 
         for (const join of joins) {
             const { referenceTable, referenceColumn, columnName } = join;
-            const joinedTable = this.getOneTable(referenceTable);
+            const joinedTable = dbMethods.deepCopy(this.getOneTable(referenceTable));
             if(tablesAlreadyJoined.includes(joinedTable)) {
                 console.log('TABLE "' + joinedTable[0][0] + '" IS ALREADY JOINED!');
                 return [['EXCEPTION ENCOUNTER'], ['TABLE "' + joinedTable[0][0] + '" IS ALREADY JOINED!']];
