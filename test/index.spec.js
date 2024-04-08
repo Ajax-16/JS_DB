@@ -31,10 +31,11 @@ beforeEach(() => {
     });
 
     const saveMock = jest.fn().mockReturnValue(true);
-    const initMock = jest.fn().mockReturnValue(true);
-
     testDBInstance.save = saveMock;
-    testDBInstance.init = initMock;
+
+    const filePathMock = jest.fn().mockReturnValue("/var/nuedb");
+    testDBInstance.getFilePath = filePathMock;
+
 })
 
 describe("Create table test", () => {

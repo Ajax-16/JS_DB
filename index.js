@@ -58,7 +58,7 @@ export class DB {
     */
     async init() {
         try {
-            this.filePath = await getFilePath(this.name);
+            this.filePath = await this.getFilePath(this.name);
             const fileContent = await fs.readFile(this.filePath, 'utf8');
             this.tables = JSON.parse(fileContent);
             this.initialized = true;
@@ -632,19 +632,19 @@ export class DB {
 
         if (joins) {
             table = await this.joinTables(this.getOneTable(tableName), joins);
-            if(table[0][0]=== 'EXCEPTION ENCOUNTER'){
+            if (table[0][0] === 'EXCEPTION ENCOUNTER') {
                 return table;
             }
         }
 
-        if(columns===undefined) {
+        if (columns === undefined) {
             columns = table[1];
         }
 
-        if(orderBy===undefined) {
+        if (orderBy === undefined) {
             orderBy = table[1][0]
         }
-        
+
         for (let i = 0; i < columns.length; i++) {
             if (!table[1].includes(columns[i])) {
                 return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columns[i] + '" IS NOT A VALID COLUMN!']];
@@ -736,7 +736,7 @@ export class DB {
     async joinTables(originTable, joins) {
 
         originTable = dbMethods.deepCopy(originTable);
-    
+
         originTable[1] = originTable[1].map(column => `${originTable[0][0]}.${column}`)
 
         let joinedTables = originTable;
@@ -746,7 +746,7 @@ export class DB {
         for (const join of joins) {
             const { referenceTable, referenceColumn, columnName } = join;
             const joinedTable = dbMethods.deepCopy(this.getOneTable(referenceTable));
-            if(tablesAlreadyJoined.includes(joinedTable)) {
+            if (tablesAlreadyJoined.includes(joinedTable)) {
                 console.log('TABLE "' + joinedTable[0][0] + '" IS ALREADY JOINED!');
                 return [['EXCEPTION ENCOUNTER'], ['TABLE "' + joinedTable[0][0] + '" IS ALREADY JOINED!']];
             }
@@ -765,14 +765,14 @@ export class DB {
                 console.log('COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!');
                 return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!']];
             }
-            
+
             let resultantJoinedTables = joinedTables.slice(0, 2);
 
             for (let i = 2; i < joinedTables.length; i++) {
                 const value = joinedTables[i][columnIndex];
                 for (let j = 2; j < joinedTable.length; j++) {
                     if (joinedTable[j][referenceColumnIndex] === value) {
-                        resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j])) 
+                        resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j]))
                     }
                 }
             }
@@ -980,6 +980,28 @@ export class DB {
     }
 
     /**
+    * Gets the file path of the specified database.
+    * @param {string} dbName - The name of the database.
+    * @returns {Promise<string>} The file path of the specified database.
+    * @private
+    */
+    async getFilePath(dbName) {
+        const dbFolder = getDbFolder();
+
+        try {
+            await fs.access(dbFolder);
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                await fs.mkdir(dbFolder, { recursive: true });
+            } else {
+                throw error;
+            }
+        }
+
+        return path.join(dbFolder, `${dbName}_db.json`);
+    }
+
+    /**
     * @async
     * @method save
     * @description Saves the current state of the database to a file.
@@ -1060,28 +1082,6 @@ function getDbFolder() {
     const dbFolder = path.join(baseDir, 'data');
 
     return dbFolder;
-}
-
-/**
- * Gets the file path of the specified database.
- * @param {string} dbName - The name of the database.
- * @returns {Promise<string>} The file path of the specified database.
- * @private
- */
-async function getFilePath(dbName) {
-    const dbFolder = getDbFolder();
-
-    try {
-        await fs.access(dbFolder);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            await fs.mkdir(dbFolder, { recursive: true });
-        } else {
-            throw error;
-        }
-    }
-
-    return path.join(dbFolder, `${dbName}_db.json`);
 }
 
 /**
