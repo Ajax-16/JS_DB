@@ -1,5 +1,6 @@
 import { DB } from "../index.js"
 import jest from "jest-mock";
+import { promises as fs } from 'fs';
 
 const testDBInstance = new DB("test");
 
@@ -31,11 +32,10 @@ beforeEach(() => {
     });
 
     const saveMock = jest.fn().mockReturnValue(true);
+    const mkdirMock = jest.fn().mockReturnValue(true);
+
     testDBInstance.save = saveMock;
-
-    const filePathMock = jest.fn().mockReturnValue("/var/nuedb");
-    testDBInstance.getDbFilePath = filePathMock;
-
+    fs.mkdir = mkdirMock;
 })
 
 describe("Create table test", () => {
