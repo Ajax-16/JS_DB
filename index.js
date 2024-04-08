@@ -58,7 +58,7 @@ export class DB {
     */
     async init() {
         try {
-            this.filePath = await this.getFilePath(this.name);
+            this.filePath = await this.getDbFilePath(this.name);
             const fileContent = await fs.readFile(this.filePath, 'utf8');
             this.tables = JSON.parse(fileContent);
             this.initialized = true;
@@ -985,7 +985,7 @@ export class DB {
     * @returns {Promise<string>} The file path of the specified database.
     * @private
     */
-    async getFilePath(dbName) {
+    async getDbFilePath(dbName) {
         const dbFolder = getDbFolder();
 
         try {

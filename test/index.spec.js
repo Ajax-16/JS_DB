@@ -34,7 +34,7 @@ beforeEach(() => {
     testDBInstance.save = saveMock;
 
     const filePathMock = jest.fn().mockReturnValue("/var/nuedb");
-    testDBInstance.getFilePath = filePathMock;
+    testDBInstance.getDbFilePath = filePathMock;
 
 })
 
