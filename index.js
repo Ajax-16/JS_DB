@@ -72,9 +72,10 @@ export class DB {
                 }
                 this.initialized = true;
             } catch (writeError) {
-                console.error('ERROR WRITING ON DATABASE: ', writeError);
+                console.error('ERROR READING DATABASE: ', writeError);
             }
         }
+        return this.initialized;
     }
 
     /**
@@ -990,6 +991,7 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['YOU CAN\'T SAVE! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
         await fs.writeFile(this.filePath, JSON.stringify(this.tables, null, 2));
+        return true;
     }
 
 }
