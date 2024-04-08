@@ -31,8 +31,10 @@ beforeEach(() => {
     });
 
     const saveMock = jest.fn().mockReturnValue(true);
+    const initMock = jest.fn().mockReturnValue(true);
 
     testDBInstance.save = saveMock;
+    testDBInstance.init = initMock;
 })
 
 describe("Create table test", () => {
