@@ -2,14 +2,18 @@ import { DB } from "../index.js"
 import jest from "jest-mock";
 import { promises as fs } from 'fs';
 
-let testDBInstance;
+const trueMock = jest.fn().mockReturnValue(true);
+
+fs.mkdir = trueMock;
+fs.writeFile = trueMock;
+fs.readFile = trueMock;
+fs.access = trueMock;
+fs.unlink = trueMock;
+fs.readdir = trueMock;
+
+const testDBInstance = new DB("test");
 
 beforeEach(() => {
-
-    const mkdirMock = jest.fn().mockReturnValue(true);
-    fs.mkdir = mkdirMock;
-
-    testDBInstance = new DB("test");
 
     const testDBText =
     [
@@ -29,8 +33,7 @@ beforeEach(() => {
         ]
     ]
 
-    const saveMock = jest.fn().mockReturnValue(true);
-    testDBInstance.save = saveMock;
+    testDBInstance.save = trueMock;
 
     Object.defineProperty(testDBInstance, 'tables', {
         value: testDBText,
@@ -82,6 +85,8 @@ describe("Create table test", () => {
         expect(tableCreate).toBe(true);
     })
 })
+
+
 
 describe("Insert on table test", () => {
     test("Should insert on table", async ()=>{

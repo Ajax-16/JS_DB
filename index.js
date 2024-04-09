@@ -207,7 +207,7 @@ export class DB {
 
         if (tableIndex === -1) {
             console.log('TABLE COULD NOT BE DROPPED! TABLE "' + tableName + '" DOES\'T EXIST!')
-            result = false;
+            return false;
         }
 
         result = dbMethods.deleteByIndex(this.tables, tableIndex);
