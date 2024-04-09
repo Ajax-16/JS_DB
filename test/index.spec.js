@@ -43,11 +43,13 @@ beforeEach(async () => {
     const saveMock = jest.fn().mockReturnValue(true);
 
     testDBInstance.save = saveMock;
+
 })
 
 describe("Create table test", () => {
     test("Should not create a table because there are duplicated normal columns", async () => {
         const tableCreate = await testDBInstance.createTable({ tableName: "test_table_2", primaryKey: "id", columns: ["test_column_1", "test_column_1"] })
+        console.log(testDBInstance.save);
         expect(tableCreate).toBe(false);
     })
     test("Should not create a table because there are duplicated normal and fk columns", async () => {
@@ -56,6 +58,7 @@ describe("Create table test", () => {
                 name: "test_fk", columnName: "test_column_1", referenceTable: "test_table_2", referenceColumn: "test_column_2"
             }]
         })
+        console.log(testDBInstance.save);
         expect(tableCreate).toBe(false);
     })
     test("Should not create a table because there are duplicated fk columns", async () => {
@@ -69,6 +72,7 @@ describe("Create table test", () => {
                 }
             ]
         })
+        console.log(testDBInstance.save);
         expect(tableCreate).toBe(false);
     })
     test("Should not create a table because the name is in use", async () => {
@@ -85,16 +89,17 @@ describe("Create table test", () => {
     })
 })
 
-// describe("Insert on table test", () => {
-//     test("Should insert on table", async ()=>{
-//         const tableInsert = await testDBInstance.insert({tableName: "test_table_1", values: ["test_value_1", "test_value_2", "test_value_3"]});
-//         expect(tableInsert).toBe(true)
-//     })
-//     test("Should not insert on table because table doesn\'t exist", async ()=>{
-//         const tableInsert = await testDBInstance.insert({tableName: "table_test_1", values: ["test_value_1", "test_value_2", "test_value_3"]});
-//         expect(tableInsert[0][0]).toEqual("EXCEPTION ENCOUNTER");
-//     })
-// })
+describe("Insert on table test", () => {
+    test("Should insert on table", async ()=>{
+        const tableInsert = await testDBInstance.insert({tableName: "test_table_1", values: ["test_value_1", "test_value_2", "test_value_3"]});
+        console.log(testDBInstance.save);
+        expect(tableInsert).toBe(true)
+    })
+    test("Should not insert on table because table doesn\'t exist", async ()=>{
+        const tableInsert = await testDBInstance.insert({tableName: "table_test_1", values: ["test_value_1", "test_value_2", "test_value_3"]});
+        expect(tableInsert[0][0]).toEqual("EXCEPTION ENCOUNTER");
+    })
+})
 
 describe("Delete one element from table test", ()=>{
     test("Should delete on table", async ()=>{
