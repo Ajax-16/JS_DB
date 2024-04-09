@@ -85,34 +85,34 @@ describe("Create table test", () => {
     })
 })
 
-describe("Insert on table test", () => {
-    test("Should insert on table", async ()=>{
-        const tableInsert = await testDBInstance.insert({tableName: "test_table_1", values: ["test_value_1", "test_value_2", "test_value_3"]});
-        expect(tableInsert).toBe(true)
-    })
-    test("Should not insert on table because table doesn\'t exist", async ()=>{
-        const tableInsert = await testDBInstance.insert({tableName: "table_test_1", values: ["test_value_1", "test_value_2", "test_value_3"]});
-        expect(tableInsert[0][0]).toEqual("EXCEPTION ENCOUNTER");
-    })
-})
-
-// describe("Delete one element from table test", ()=>{
-//     test("Should delete on table", async ()=>{
-//         // test element
-//         await testDBInstance.insert({tableName: "test_table_1", values: ["test_value_1", "test_value_2", "test_value_3"]});
-//         const tableDelete = await testDBInstance.delete({tableName: "test_table_1", condition: "id", operator: "=", conditionValue: 0})
-//         expect(tableDelete).toBe(true);
+// describe("Insert on table test", () => {
+//     test("Should insert on table", async ()=>{
+//         const tableInsert = await testDBInstance.insert({tableName: "test_table_1", values: ["test_value_1", "test_value_2", "test_value_3"]});
+//         expect(tableInsert).toBe(true)
 //     })
-//     test("Should not delete on table because the element doesn\'t exist", async ()=>{
-//         const tableDelete = await testDBInstance.delete({tableName: "test_table_1", condition: "id", operator: "=", conditionValue: 1})
-//         expect(tableDelete).toBe(false);
-//     })
-//     test("Should not delete on table because a column is invalid", async ()=>{
-//         const tableDelete = await testDBInstance.delete({tableName: "test_table_1", condition: "invented_column", operator: "=", conditionValue: "value"})
-//         expect(tableDelete[0][0]).toEqual("EXCEPTION ENCOUNTER");
-//     })
-//     test("Should not delete on table because the table doesn\'t exist", async ()=>{
-//         const tableDelete = await testDBInstance.delete({tableName: "invented_table", condition: "id", operator: "=", conditionValue: 0})
-//         expect(tableDelete[0][0]).toEqual("EXCEPTION ENCOUNTER");
+//     test("Should not insert on table because table doesn\'t exist", async ()=>{
+//         const tableInsert = await testDBInstance.insert({tableName: "table_test_1", values: ["test_value_1", "test_value_2", "test_value_3"]});
+//         expect(tableInsert[0][0]).toEqual("EXCEPTION ENCOUNTER");
 //     })
 // })
+
+describe("Delete one element from table test", ()=>{
+    test("Should delete on table", async ()=>{
+        // test element
+        await testDBInstance.insert({tableName: "test_table_1", values: ["test_value_1", "test_value_2", "test_value_3"]});
+        const tableDelete = await testDBInstance.delete({tableName: "test_table_1", condition: "id", operator: "=", conditionValue: 0})
+        expect(tableDelete).toBe(true);
+    })
+    test("Should not delete on table because the element doesn\'t exist", async ()=>{
+        const tableDelete = await testDBInstance.delete({tableName: "test_table_1", condition: "id", operator: "=", conditionValue: 1})
+        expect(tableDelete).toBe(false);
+    })
+    test("Should not delete on table because a column is invalid", async ()=>{
+        const tableDelete = await testDBInstance.delete({tableName: "test_table_1", condition: "invented_column", operator: "=", conditionValue: "value"})
+        expect(tableDelete[0][0]).toEqual("EXCEPTION ENCOUNTER");
+    })
+    test("Should not delete on table because the table doesn\'t exist", async ()=>{
+        const tableDelete = await testDBInstance.delete({tableName: "invented_table", condition: "id", operator: "=", conditionValue: 0})
+        expect(tableDelete[0][0]).toEqual("EXCEPTION ENCOUNTER");
+    })
+})
