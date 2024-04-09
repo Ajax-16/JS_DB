@@ -1075,7 +1075,6 @@ async function getFilePath(dbName) {
         await fs.access(dbFolder);
     } catch (error) {
         if (error.code === 'ENOENT') {
-            console.log("Hello")
             await fs.mkdir(dbFolder, { recursive: true });
         } else {
             throw error;
