@@ -207,7 +207,7 @@ export class DB {
 
         if (tableIndex === -1) {
             console.log('TABLE COULD NOT BE DROPPED! TABLE "' + tableName + '" DOES\'T EXIST!')
-            return false;
+            result = false;
         }
 
         result = dbMethods.deleteByIndex(this.tables, tableIndex);
@@ -491,7 +491,7 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST!']];
         }
 
-        const { columnIndex, rows, success, errorMessage } = await this.findRowsByCondition({ table, condition, operator, conditionValue });
+        const { columnIndex, rows, success, errorMessage } = await this.retrieveRowIndexes({ table, condition, operator, conditionValue });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -541,7 +541,7 @@ export class DB {
         }
         const table = this.getOneTable(tableName);
 
-        const { columnIndex, rows, success, errorMessage } = await this.findRowsByCondition({ table, condition, operator, conditionValue });
+        const { columnIndex, rows, success, errorMessage } = await this.retrieveRowIndexes({ table, condition, operator, conditionValue });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -651,7 +651,7 @@ export class DB {
             }
         }
 
-        let { rows, success, errorMessage } = await this.findRowsByCondition({ table, condition, operator, conditionValue });
+        let { rows, success, errorMessage } = await this.retrieveRowIndexes({ table, condition, operator, conditionValue });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -784,7 +784,7 @@ export class DB {
 
     /**
      * @async
-     * @method findRowsByCondition
+     * @method retrieveRowIndexes
      * @description Searches for rows that meet a certain condition in a table.
      * @param {string} tableName - The name of the table.
      * @param {string} condition - The column used as a condition.
@@ -792,7 +792,7 @@ export class DB {
      * @param {any} conditionValue - The value used for the condition.
      * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
-    async findRowsByCondition({ table, condition, operator, conditionValue }) {
+    async retrieveRowIndexes({ table, condition, operator, conditionValue }) {
 
         let rows = [];
 
