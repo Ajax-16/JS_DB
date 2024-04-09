@@ -1075,8 +1075,16 @@ async function getFilePath(dbName) {
         await fs.access(dbFolder);
     } catch (error) {
         if (error.code === 'ENOENT') {
-            await fs.mkdir(dbFolder, { recursive: true });
-        } else {
+            try {
+                await fs.mkdir(dbFolder, { recursive: true });
+            }catch(mkdirError) {
+                if(error.code === 'EACCES') {
+                    console.log("Cannot perform db actions. NueDB doesn\'t have permissions to create files or directories");
+                }else {
+                    throw mkdirError
+                }
+            }
+        }else{
             throw error;
         }
     }
