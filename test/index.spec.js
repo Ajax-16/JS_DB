@@ -4,7 +4,16 @@ import { promises as fs } from 'fs';
 
 const testDBInstance = new DB("test");
 
-beforeEach(() => {
+jest.mocked(
+    fs,
+    () => ({
+      mkdir: jest.fn(() => {
+        return true;
+      }),
+    })
+  );
+
+beforeEach(async () => {
     const testDBText =
     [
         [
@@ -32,10 +41,8 @@ beforeEach(() => {
     });
 
     const saveMock = jest.fn().mockReturnValue(true);
-    const mkdirMock = jest.fn().mockReturnValue(true);
 
     testDBInstance.save = saveMock;
-    fs.mkdir = mkdirMock;
 })
 
 describe("Create table test", () => {
