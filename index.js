@@ -491,7 +491,7 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST!']];
         }
 
-        const { columnIndex, rows, success, errorMessage } = await this.retrieveRowIndexes({ table, condition, operator, conditionValue });
+        const { columnIndex, rows, success, errorMessage } = this.retrieveRowIndexes({ table, condition, operator, conditionValue });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -541,7 +541,7 @@ export class DB {
         }
         const table = this.getOneTable(tableName);
 
-        const { columnIndex, rows, success, errorMessage } = await this.retrieveRowIndexes({ table, condition, operator, conditionValue });
+        const { columnIndex, rows, success, errorMessage } = this.retrieveRowIndexes({ table, condition, operator, conditionValue });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -618,7 +618,7 @@ export class DB {
     * @param {number} limit - The maximum number of rows to retrieve.
     * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
     */
-    async find({ tableName, distinct = false, columns, joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy, asc = true }) {
+    find({ tableName, distinct = false, columns, joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy, asc = true }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -631,7 +631,7 @@ export class DB {
         }
 
         if (joins) {
-            table = await this.joinTables(this.getOneTable(tableName), joins);
+            table = this.joinTables(this.getOneTable(tableName), joins);
             if(table[0][0]=== 'EXCEPTION ENCOUNTER'){
                 return table;
             }
@@ -651,7 +651,7 @@ export class DB {
             }
         }
 
-        let { rows, success, errorMessage } = await this.retrieveRowIndexes({ table, condition, operator, conditionValue });
+        let { rows, success, errorMessage } = this.retrieveRowIndexes({ table, condition, operator, conditionValue });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -733,7 +733,7 @@ export class DB {
 
     }
 
-    async joinTables(originTable, joins) {
+    joinTables(originTable, joins) {
 
         originTable = dbMethods.deepCopy(originTable);
     
@@ -792,13 +792,19 @@ export class DB {
      * @param {any} conditionValue - The value used for the condition.
      * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
-    async retrieveRowIndexes({ table, condition, operator, conditionValue }) {
+    retrieveRowIndexes({ table, condition, operator, conditionValue }) {
 
         let rows = [];
 
         let escapedPattern, regexPattern, regex;
 
-        if (condition === undefined || conditionValue === undefined) {
+        if(condition === undefined) {
+            condition = table[1][0];
+        }
+
+        console.log(operator)
+
+        if (conditionValue === undefined) {
 
             // Obtiene todas las filas de la tabla sin filtrar (FIND "columnas" IN "tabla")
             for (let i = 2; i < table.length; i++) {
@@ -812,7 +818,7 @@ export class DB {
             const columnIndex = treeSearch(table[1], condition);
             if (columnIndex === -1) {
                 console.log('CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!');
-                return { columnIndex: 0, rows: [], success: false, errorMessage: 'CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!' };
+                return { columnIndex: undefined, rows: [], success: false, errorMessage: 'CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!' };
             }
 
             // Se indexan los valores de la columna especificada en la condición
