@@ -195,7 +195,7 @@ describe("retrieve row indexes successfully test", () => {
         for (let i = 0; i < 5; i++) {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
-        
+
         const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "id", operator: ">", conditionValue: 0 })
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.arrayContaining([3, 4, 5, 6]));
@@ -368,6 +368,7 @@ describe("Delete element from table test", () => {
 
 describe("Update element from table test", ()=>{
     test("Should update one column value on table", async ()=>{
+        //comment to test webhook
         const updateTable = await testDBInstance.update({tableName: "table_test_1", set: ["table_column_1"], setValues: ["new_value"], condition: "id", operator: "=", conditionValue: 0})
     })
 })
