@@ -1,6 +1,6 @@
 {
   "name": "nuedb_core",
-  "version": "0.1.1v2",
+  "version": "0.1.1v4",
   "description": "Core Engine for NueDB, a database management system based on nodejs",
   "main": "index.js",
   "scripts": {
