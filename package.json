@@ -1,0 +1,29 @@
+{
+  "name": "nuedb_core",
+  "version": "0.1.1v9",
+  "description": "Core Engine for NueDB, a database management system based on nodejs",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon --watch ./ -e js,json index.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --verbose",
+    "test:watch":"npm run test -- --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ajax-16/nuedb-core.git"
+  },
+  "keywords": [],
+  "author": "David Bernárdez Luque",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "jsdoc": "^4.0.2",
+    "socket.io": "^4.7.2",
+    "url": "^0.11.3"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4"
+  }
+}
