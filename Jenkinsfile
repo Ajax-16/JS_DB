@@ -26,12 +26,12 @@ pipeline {
         }
         stage("Push to Github") {
             steps {
+
+                sh 'git remote rm github'
                 
                 sh 'git remote add github https://$GITHUB_TOKEN@github.com/Ajax-16/nuedb-core.git'
                 
                 sh 'git push --mirror github'
-                
-                sh 'git remote rm github'
                     
             }
         }
