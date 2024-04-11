@@ -30,6 +30,8 @@ pipeline {
                 sh 'git remote rm github'
 
                 sh 'git remote add github https://$GITHUB_TOKEN@github.com/Ajax-16/nuedb-core.git'
+
+                sh 'git pull github feature'
                 
                 sh 'git push --mirror github'
                     
