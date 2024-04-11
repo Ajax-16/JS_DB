@@ -374,4 +374,9 @@ describe("Update element from table test", ()=>{
         expect(updateTable).toBe(true);
         expect(updatedElementRow).toEqual(expect.arrayContaining(["new_value"]))
     })
+    test("Should not update one column value on table because the table doesn\'t exist", async ()=>{
+        await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_1`, `test_value_2`, `test_value_3`] });
+        const updateTable = await testDBInstance.update({tableName: "fake_table", set: ["test_column_1"], setValues: ["new_value"], condition: "id", operator: "=", conditionValue: 0})
+        expect(updateTable[0][0]).toEqual("EXCEPTION ENCOUNTER");
+    })
 })
