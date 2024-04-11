@@ -44,7 +44,7 @@ pipeline {
                 
                 sh 'git remote add github https://$GITHUB_TOKEN@github.com/Ajax-16/nuedb-core.git'
                         
-                sh 'git push --mirror github'
+                sh 'git push github'
                 
                 // Para que en el siguiente job no exista
                 sh 'git remote rm github'
