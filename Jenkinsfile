@@ -11,7 +11,7 @@ pipeline {
             steps {
                 sh 'git config --global user.name "Ajax-16"'
                 sh 'git config --global user.email "davidbernardezluque7618@gmail.com"'
-                git url: 'http://gitlab:30080/root/nuedb-core.git', branch: 'dev', credentialsId: 'git_user_pass'
+                git url: 'http://gitlab:30080/root/nuedb-core.git', branch: 'feature', credentialsId: 'git_user_pass'
             }
         }
         stage("Build dependencies") {
