@@ -793,7 +793,7 @@ export class DB {
      * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
     retrieveRowIndexes({ table, condition, operator, conditionValue }) {
-
+        //
         let rows = [];
 
         let escapedPattern, regexPattern, regex;
