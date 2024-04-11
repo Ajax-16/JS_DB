@@ -29,12 +29,11 @@ pipeline {
                 sh 'git config --global user.name "Ajax-16"'
                 sh 'git config --global user.email "davidbernardezluque7618@gmail.com"'
                 
+                sh 'git remote rm github'
+
                 sh 'git remote add github https://$GITHUB_TOKEN@github.com/Ajax-16/nuedb-core.git'
                         
                 sh 'git push github'
-                
-                // Para que en el siguiente job no exista
-                sh 'git remote rm github'
                     
             }
         }
