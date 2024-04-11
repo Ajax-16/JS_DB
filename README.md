@@ -12,7 +12,7 @@ NueDB is a relational database system designed to provide a flexible service thr
 
 - **REST API Integration**: The system will consume resources from any JSON-formatted REST API endpoint, transforming the data into dynamic table insertions.
 - **Dynamic Table Creation**: New tables and relationships will be dynamically created to accommodate data from REST API endpoints, ensuring flexibility and scalability.
-- **Query Language with Control Structures**: NueDB will evolve NQL to incorporate control structures, empowering users to iterate actions and apply conditional logic. At this stage, it will be referred to as NSQL (Nue Scripted Query Language), emphasizing its advanced scripting capabilities beyond standard SQL.
+- **Query Language with Control Structures**: NueDB will evolve NQL to incorporate control structures, empowering users to iterate actions and apply conditional logic. At this stage, it will be referred to as **NSQL** (Nue Scripted Query Language), emphasizing its advanced scripting capabilities beyond standard SQL.
 
 ---
 
