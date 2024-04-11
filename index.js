@@ -802,8 +802,6 @@ export class DB {
             condition = table[1][0];
         }
 
-        console.log(operator)
-
         if (conditionValue === undefined) {
 
             // Obtiene todas las filas de la tabla sin filtrar (FIND "columnas" IN "tabla")
@@ -816,6 +814,7 @@ export class DB {
         } else {
 
             const columnIndex = treeSearch(table[1], condition);
+
             if (columnIndex === -1) {
                 console.log('CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!');
                 return { columnIndex: undefined, rows: [], success: false, errorMessage: 'CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!' };

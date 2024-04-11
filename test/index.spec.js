@@ -368,7 +368,8 @@ describe("Delete element from table test", () => {
 
 describe("Update element from table test", ()=>{
     test("Should update one column value on table", async ()=>{
-        //comment to test webhook
-        const updateTable = await testDBInstance.update({tableName: "table_test_1", set: ["table_column_1"], setValues: ["new_value"], condition: "id", operator: "=", conditionValue: 0})
+        await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_1`, `test_value_2`, `test_value_3`] });
+        const updateTable = await testDBInstance.update({tableName: "test_table_1", set: ["test_column_1"], setValues: ["new_value"], condition: "id", operator: "=", conditionValue: 0})
+        expect(updateTable).toBe(true);
     })
 })
