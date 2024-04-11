@@ -31,7 +31,6 @@ pipeline {
                 
                 sh 'git push --mirror github'
                 
-                // Para que en el siguiente job no exista
                 sh 'git remote rm github'
                     
             }
