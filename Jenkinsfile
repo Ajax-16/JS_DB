@@ -33,7 +33,7 @@ pipeline {
 
                 sh 'git pull github feature'
                 
-                sh 'git push --mirror github'
+                sh 'git push --mirror --exclude=main --exclude=dev github'
                     
             }
         }
