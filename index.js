@@ -730,7 +730,6 @@ export class DB {
 
         return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS NOT FOUND!']]
 
-
     }
 
     joinTables(originTable, joins) {
