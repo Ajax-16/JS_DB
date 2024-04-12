@@ -754,6 +754,7 @@ export class DB {
             const joinedTableColumns = joinedTable[1];
             joinedTables[0][0] = joinedTables[0][0].concat(`|${referenceTable}`)
             joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${join.referenceTable}.${column}`));
+            console.log(joinedTable[1])
             const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn.split('.').pop());
             if (referenceColumnIndex === -1) {
                 console.log('REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!');
@@ -793,7 +794,7 @@ export class DB {
      * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
     retrieveRowIndexes({ table, condition, operator, conditionValue }) {
-        //
+        
         let rows = [];
 
         let escapedPattern, regexPattern, regex;
