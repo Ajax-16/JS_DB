@@ -379,4 +379,9 @@ describe("Update element from table test", ()=>{
         const updateTable = await testDBInstance.update({tableName: "fake_table", set: ["test_column_1"], setValues: ["new_value"], condition: "id", operator: "=", conditionValue: 0})
         expect(updateTable[0][0]).toEqual("EXCEPTION ENCOUNTER");
     })
+    test("Should not update one column value on table because the used set column or columns are not valid", async ()=>{
+        await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_1`, `test_value_2`, `test_value_3`] });
+        const updateTable = await testDBInstance.update({tableName: "test_table_1", set: ["fake_column"], setValues: ["new_value"], condition: "id", operator: "=", conditionValue: 0})
+        expect(updateTable[0][0]).toEqual("EXCEPTION ENCOUNTER");
+    })
 })
