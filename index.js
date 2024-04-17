@@ -619,6 +619,8 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
 
+        console.log("Esto es un test")
+
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'EXCEPTION ENCOUNTER') {
             console.log('TABLE "' + tableName + '" DOESN\'T EXIST!');
@@ -631,8 +633,6 @@ export class DB {
                 return table;
             }
         }
-
-        // Esto es un ejemplo
 
         if(columns===undefined) {
             columns = table[1];
