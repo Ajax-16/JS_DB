@@ -91,6 +91,10 @@ describe("Create table test", () => {
         const tableCreate = await testDBInstance.createTable({ tableName: "EXCEPTION ENCOUNTER", primaryKey: "id", columns: ["test_column_1", "test_column_2"] })
         expect(tableCreate[0][0]).toEqual("EXCEPTION ENCOUNTER");
     })
+    test("Should not create a table because a column name is used as primary key", async ()=>{
+        const tableCreate = await testDBInstance.createTable({ tableName: "test_table_2", primaryKey: "id", columns: ["id", "test_column_2"] })
+        expect(tableCreate[0][0]).toEqual("EXCEPTION ENCOUNTER");
+    })
     test("Should create a table with any conflicts", async () => {
         const tableCreate = await testDBInstance.createTable({ tableName: "test_table_2", primaryKey: "id", columns: ["test_column_1", "test_column_2"] })
         expect(tableCreate).toBe(true);

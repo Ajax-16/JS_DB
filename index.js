@@ -88,7 +88,7 @@ export class DB {
    * @param {Array} options.columns - An array of column names.
    * @returns {Promise<boolean>|Array} True if the table was created successfully; otherwise, it returns an array of arrays containing the error.
    */
-    async createTable({ tableName, primaryKey, columns, foreignKeys }) {
+    async createTable({ tableName = 'table', primaryKey = 'id', columns = [], foreignKeys }) {
 
         if (!this.initialized) {
             console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. DATABASE "' + this.name + '" NOT INITIALIZED! ');
@@ -102,23 +102,18 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['TABLE CANNOT BE CREATED! TABLE NAME "' + tableName + '" ALREADY IN USE!']];
         }
 
-        if (tableName === undefined) {
-            tableName = 'table';
-        }
-
-        if (primaryKey === undefined) {
-            primaryKey = 'id';
-        }
-
-        if (columns === undefined) {
-            columns = [];
-        }
-
-        let isKeyWord = treeSearch(this.keywords, tableName);
+        const isKeyWord = treeSearch(this.keywords, tableName);
 
         if (isKeyWord !== -1) {
             console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. TABLE NAME "' + tableName + '" IS A KEYWORD!');
-            return [['EXCEPTION ENCOUNTER'], ['TABLE CANNOT BE CREATED! TABLE NAME "' + tableName + '" IS A KEYWORD!']];
+            return [['EXCEPTION ENCOUNTER'], ['TABLE WITH NAME "' + tableName + '" NOT CREATED! TABLE NAME "' + tableName + '" IS A KEYWORD!']];
+        }
+
+        const pkInColumns = treeSearch(columns, primaryKey);
+        
+        if(pkInColumns !== -1) {
+            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. A COLUMN NAME IS ALREADY IN USE AS A PRIMARY KEY!');
+            return [['EXCEPTION ENCOUNTER'], ['TABLE WITH NAME "' + tableName + '" NOT CREATED. A COLUMN NAME IS ALREADY IN USE AS A PRIMARY KEY!']];
         }
 
         let table = [[], []];
@@ -753,7 +748,6 @@ export class DB {
             const joinedTableColumns = joinedTable[1];
             joinedTables[0][0] = joinedTables[0][0].concat(`|${referenceTable}`)
             joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${join.referenceTable}.${column}`));
-            console.log(joinedTable[1])
             const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn.split('.').pop());
             if (referenceColumnIndex === -1) {
                 console.log('REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!');
