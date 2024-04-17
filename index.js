@@ -632,6 +632,8 @@ export class DB {
             }
         }
 
+        // Esto es un ejemplo
+
         if(columns===undefined) {
             columns = table[1];
         }
