@@ -38,6 +38,8 @@ export class DB {
     */
     cache;
 
+    transactionEnded = false;
+
     /**
      * Creates an instance of DB.
      * @constructor
@@ -166,8 +168,6 @@ export class DB {
 
         dbMethods.insert(this.tables, table);
 
-        await this.save();
-
         console.log('TABLE WITH NAME "' + tableName + '" CREATED SUCCESSFULY');
 
         return true;
@@ -201,8 +201,6 @@ export class DB {
         result = dbMethods.deleteByIndex(this.tables, tableIndex);
 
         console.log('TABLE "' + tableName + '" DROPPED SUCCESSFULY');
-
-        await this.save();
 
         return result;
 
@@ -447,9 +445,10 @@ export class DB {
         dbMethods.insert(table, row);
         table[0][1].elements++; // Actualiza el contador de elementos en los encabezados de la tabla
     
-        await this.save();
-    
+        console.log('CREATED ROW WITH "' + table[1][0] + '" VALUE = "' + table[table.length - 1][0] + '"')
+
         return true;
+    
     }
     /**
     * @async
@@ -491,8 +490,6 @@ export class DB {
             }
 
             console.log(`DELETED ${rows.length} ROW(S) WITH "${condition}" ${operator} "${conditionValue}"`);
-
-            await this.save();
 
             return true;
 
@@ -580,7 +577,6 @@ export class DB {
             }
             updated = totalUpdated > 0;
             finalMsg = updated ? `UPDATED ${totalUpdated} ROW(S) WITH (${JSON.stringify(set)}) VALUES (${JSON.stringify(setValues)})` : '0 ROWS UPDATED';
-            await this.save();
         }
         console.log(finalMsg);
         return updated;
@@ -946,10 +942,10 @@ export class DB {
                     }
                     break;
                 case '!=':
-                    for (let [value, indices] of indexMap) {
-                        if (value !== conditionValue) {
-                            rows = rows.concat(indices);
-                        }
+                    if (!indexMap.has(conditionValue)) {
+                        rows = [];
+                    } else {
+                        rows = indexMap.get(conditionValue) || [];
                     }
                     break;
                 case '=':
