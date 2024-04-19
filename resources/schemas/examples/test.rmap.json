@@ -1,0 +1,29 @@
+[
+    {
+        "name": "category",
+        "columns": [
+            {
+                "name": "name"
+            },
+            {
+                "name": "popularity"
+            },
+            {
+                "table": {
+                    "name": "products",
+                    "columns": [
+                        {
+                            "name": "name"
+                        },
+                        {
+                            "name": "price"
+                        },
+                        {
+                            "name": "category_id"
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+]

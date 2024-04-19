@@ -1,0 +1,50 @@
+[
+    [
+        [
+            "category",
+            {
+                "elements": 0
+            }
+        ],
+        [
+            "id",
+            "name",
+            "popularity"
+        ],
+        [
+            0,
+            "jardineria",
+            7
+        ]
+    ],
+    [
+        [
+            "products",
+            {
+                "elements": 0,
+                "references": [
+                    {
+                        "name": "category_id",
+                        "columnName": "category_id",
+                        "referenceTable": "category",
+                        "referenceColumn": "id"
+                    }
+                ]
+            }
+        ],
+        [
+            "id",
+            "name",
+            "price",
+            "description",
+            "category_id"
+        ],
+        [
+            0,
+            "rosa",
+            10,
+            "Una rosa bonita",
+            0
+        ]
+    ]
+]

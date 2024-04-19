@@ -253,7 +253,6 @@ export class DB {
                                         dbMethods.insert(table[i], null);
                                     }
                                 }
-
                                 if (options.save) {
                                     await this.save();
                                 }
@@ -761,7 +760,7 @@ export class DB {
             }
             
             let resultantJoinedTables = joinedTables.slice(0, 2);
-
+            
             for (let i = 2; i < joinedTables.length; i++) {
                 const value = joinedTables[i][columnIndex];
                 for (let j = 2; j < joinedTable.length; j++) {

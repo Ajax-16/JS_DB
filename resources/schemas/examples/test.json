@@ -1,0 +1,11 @@
+{
+    "name": "Jardineria",
+    "popularity": 7,
+    "products": [
+        {
+            "name": "rosa",
+            "price": 20,
+            "description": "Una rosa muy bonita"
+        }
+    ]
+}
