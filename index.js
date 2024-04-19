@@ -109,13 +109,6 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['TABLE WITH NAME "' + tableName + '" NOT CREATED! TABLE NAME "' + tableName + '" IS A KEYWORD!']];
         }
 
-        const pkInColumns = treeSearch(columns, primaryKey);
-        
-        if(pkInColumns !== -1) {
-            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. A COLUMN NAME IS ALREADY IN USE AS A PRIMARY KEY!');
-            return [['EXCEPTION ENCOUNTER'], ['TABLE WITH NAME "' + tableName + '" NOT CREATED. A COLUMN NAME IS ALREADY IN USE AS A PRIMARY KEY!']];
-        }
-
         let table = [[], []];
 
         table[0][0] = tableName;
@@ -425,6 +418,7 @@ export class DB {
             console.log('ROW CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
+    
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'EXCEPTION ENCOUNTER') {
             console.log('ROW CANNOT BE CREATED! TABLE "' + tableName + '" DOESN\'T EXISTS!');
@@ -434,35 +428,29 @@ export class DB {
         if (!columns) {
             columns = table[1].slice(1);
         }
-
+    
         let columnNames = table[1];
         let elementsValue = table[0][1].elements;
-        let row = [elementsValue];
-
-        for (let i = 1; i < columnNames.length; i++) {
+    
+        let row = new Array(columnNames.length).fill(null); // Crea una fila llena de nulls
+        row[0] = elementsValue; // Establece el valor de auto incremento
+    
+        // Asigna valores a las columnas correspondientes
+        for (let i = 0; i < columnNames.length; i++) {
             let columnName = columnNames[i];
-            if (columns.includes(columnName)) {
-                let valueIndex = treeSearch(columns, columnName);
-                if (values[valueIndex] !== undefined) {
-                    dbMethods.insert(row, values[valueIndex])
-                } else {
-                    dbMethods.insert(row, null);
-                }
-            } else {
-                dbMethods.insert(row, null);
+            let columnIndex = columns.indexOf(columnName);
+            if (columnIndex !== -1) {
+                row[i] = values[columnIndex]; // Asigna el valor correspondiente a la columna
             }
         }
-
+    
         dbMethods.insert(table, row);
-        table[0][1].elements++; // Actualizar el contador de elements en los encabezados de la tabla
-
+        table[0][1].elements++; // Actualiza el contador de elementos en los encabezados de la tabla
+    
         await this.save();
-
-        console.log('CREATED ROW WITH "' + table[1][0] + '" VALUE = "' + table[table.length - 1][0] + '"')
-
+    
         return true;
     }
-
     /**
     * @async
     * @method delete
@@ -988,7 +976,7 @@ export class DB {
             console.log('YOU CAN\'T SAVE! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['EXCEPTION ENCOUNTER'], ['YOU CAN\'T SAVE! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
-        await fs.writeFile(this.filePath, JSON.stringify(this.tables, null, 2));
+        await fs.writeFile(this.filePath, JSON.stringify(this.tables, null, 0));
         return true;
     }
 

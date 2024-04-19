@@ -23,6 +23,22 @@
                         }
                     ]
                 }
+            },
+            {
+                "table": {
+                    "name": "user",
+                    "columns": [
+                        {
+                            "name": "username"
+                        },
+                        {
+                            "name": "password"
+                        },
+                        {
+                            "name": "category_id"
+                        }
+                    ]
+                }
             }
         ]
     }
