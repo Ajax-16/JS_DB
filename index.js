@@ -942,10 +942,10 @@ export class DB {
                     }
                     break;
                 case '!=':
-                    if (!indexMap.has(conditionValue)) {
-                        rows = [];
-                    } else {
-                        rows = indexMap.get(conditionValue) || [];
+                    for (let [value, indices] of indexMap) {
+                        if (value !== conditionValue) {
+                            rows = rows.concat(indices);
+                        }
                     }
                     break;
                 case '=':
