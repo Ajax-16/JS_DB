@@ -444,8 +444,6 @@ export class DB {
     
         dbMethods.insert(table, row);
         table[0][1].elements++; // Actualiza el contador de elementos en los encabezados de la tabla
-    
-        console.log('CREATED ROW WITH "' + table[1][0] + '" VALUE = "' + table[table.length - 1][0] + '"')
 
         return true;
     
