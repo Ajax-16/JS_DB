@@ -14,15 +14,23 @@ export class DB {
     * @property {Array} tables - An array to store tables in the database.
     */
     tables = [];
+    /**
+    * @property {Array} rmap - An array to store the database structure.
+    */
+    rmap = [];
 
     /**
     * @property {string} name - The name of the database.
     */
     name = 'db';
     /**
-    * @property {string} name - The file path to the current database.
+    * @property {string} dbFilePath - The file path to the current database.
     */
-    filePath = '';
+    dbFilePath = '';
+    /**
+    * @property {string} rmapFilePath - The file path to the current database rmap.
+    */
+    rmapFilePath = '';
     /**
     * @property {Array} keywords - An array of keywords used for checking table names.
     */
@@ -60,17 +68,25 @@ export class DB {
     */
     async init() {
         try {
-            this.filePath = await getFilePath(this.name);
-            const fileContent = await fs.readFile(this.filePath, 'utf8');
-            this.tables = JSON.parse(fileContent);
+            this.dbFilePath = await getDbFilePath(this.name);
+            this.rmapFilePath = await getRmapFilePath(this.name);
+            const dbContent = await fs.readFile(this.dbFilePath, 'utf8');
+            const rmapContent = await fs.readFile(this.rmapFilePath, 'utf8')
+            this.tables = JSON.parse(dbContent);
+            this.rmap = JSON.parse(rmapContent);
             this.initialized = true;
         } catch (readError) {
             this.tables = [];
+            this.rmap = [];
 
             try {
-                await fs.writeFile(this.filePath, '[]');
+                await fs.writeFile(this.dbFilePath, '[]');
                 if (await getDatabasePosition(this.name) === -1) {
                     console.log('DATABASE CREATED SUCCESSFULY');
+                }
+                await fs.writeFile(this.rmapFilePath, '[]');
+                if (await getRmapPosition(this.name) === -1) {
+                    
                 }
                 this.initialized = true;
             } catch (writeError) {
@@ -81,16 +97,16 @@ export class DB {
     }
 
     /**
-   * @async
    * @method createTable
    * @description Creates a new table in the database.
    * @param {Object} options - Options for creating the table.
    * @param {string} options.tableName - The name of the table.
    * @param {string} options.primaryKey - The primary key of the table.
    * @param {Array} options.columns - An array of column names.
+   * @param {Array<{name, columnName, referenceTable, referenceColumn}>} options.foreignKeys - An array of column names.
    * @returns {Promise<boolean>|Array} True if the table was created successfully; otherwise, it returns an array of arrays containing the error.
    */
-    async createTable({ tableName = 'table', primaryKey = 'id', columns = [], foreignKeys }) {
+    createTable({ tableName = 'table', primaryKey = 'id', columns = [], foreignKeys }) {
 
         if (!this.initialized) {
             console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. DATABASE "' + this.name + '" NOT INITIALIZED! ');
@@ -112,7 +128,7 @@ export class DB {
         }
 
         const isValid = treeSearch(tableName, " ");
-        if(isValid !== -1) {
+        if (isValid !== -1) {
             console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. TABLE NAMES CANNOT HAVE WHITESPACES');
             return [['EXCEPTION ENCOUNTER'], ['TABLE WITH NAME "' + tableName + '" NOT CREATED! TABLE NAMES CANNOT HAVE WHITESPACES']];
         }
@@ -133,17 +149,30 @@ export class DB {
 
             let foreignColumns = [];
 
-            table[0][1]["references"] = []
+            table[0][1].references = []
 
             for (const foreignKey of foreignKeys) {
 
                 let { name, columnName, referenceTable, referenceColumn } = foreignKey;
 
-                if (name === undefined) {
-                    name = referenceTable.concat(`_${referenceColumn}`);
+                const referenceTableExist = this.getOneTable(referenceTable);
+
+                if (referenceTableExist[0][0] === 'EXCEPTION ENCOUNTER') {
+                    console.log('TABLE WITH NAME "' + tableName + '" CANNOT BE CREATED. REFERENCE TABLE "' + referenceTable + '" DOESN\'T EXIST!');
+                    return false;
                 }
 
-                table[0][1]["references"].push({ name, columnName, referenceTable, referenceColumn })
+                const referenceColumnExist = treeSearch(referenceTableExist[1], referenceColumn)
+                if (referenceColumnExist === -1) {
+                    console.log('TABLE WITH NAME "' + tableName + '" CANNOT BE CREATED. COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!');
+                    return false;
+                }
+
+                if (name === undefined) {
+                    name = referenceTable.concat(`_fk_${referenceColumn}`);
+                }
+
+                table[0][1].references.push({ name, columnName, referenceTable, referenceColumn })
 
                 dbMethods.insert(foreignColumns, foreignKey.columnName)
             }
@@ -176,18 +205,28 @@ export class DB {
 
         console.log('TABLE WITH NAME "' + tableName + '" CREATED SUCCESSFULY');
 
+        this.createRmap(table);
+
         return true;
 
     }
 
+    createRmap(newTable) {
+        const rmapObj = {}
+
+        rmapObj.name = newTable[0][0];
+        rmapObj.columns = newTable[1];
+        console.log(rmapObj)
+
+    }
+
     /**
-    * @async
     * @method dropTable
     * @description Drops an existing table from the database.
     * @param {string} tableName - The name of the table to drop.
     * @returns {Promise<boolean>} True if the table was successfully dropped; otherwise, it returns false.
     */
-    async dropTable(tableName) {
+    dropTable(tableName) {
         if (!this.initialized) {
             console.log('TABLE WITH NAME "' + tableName + '" COULD NOT BE DROPPED! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return false;
@@ -219,7 +258,7 @@ export class DB {
     * @param {String} operation The operation to perform on the table.
     * @param {String} target The target to alter.
     */
-    async alterTable({ tableName, operation, target, options = { save: false }, elements }) {
+    alterTable({ tableName, operation, target, options = { save: false }, elements }) {
         if (!this.initialized) {
             console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -242,16 +281,13 @@ export class DB {
 
                     case 'COLUMN':
 
-                        elements.forEach(async (column) => {
+                        elements.forEach((column) => {
                             if (treeSearch(table[1], column.name) === -1) {
                                 dbMethods.insert(table[1], column.name);
                                 if (column.void) {
                                     for (let i = 2; i < table.length; i++) {
                                         dbMethods.insert(table[i], null);
                                     }
-                                }
-                                if (options.save) {
-                                    await this.save();
                                 }
                             } else {
                                 console.log('column already exists');
@@ -355,7 +391,7 @@ export class DB {
     * @description Retrieves all tables with shortened names for display.
     * @returns {Array} An array of tables with shortened names.
     */
-    async showAllTables() {
+    showAllTables() {
         if (!this.initialized) {
             return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
@@ -404,7 +440,6 @@ export class DB {
     }
 
     /**
-    * @async
     * @method insert
     * @description Inserts a new row into a specified table.
     * @param {Object} options - Options for inserting the row.
@@ -412,11 +447,11 @@ export class DB {
     * @param {Array} options.values - An array of values to insert.
     * @returns {Promise<boolean>|Array} True if the row was successfully inserted; otherwise, it returns an array of arrays containing the error.
     */
-    async insert({ tableName, columns, values }) {
+    insert({ tableName, columns, values }) {
         if (!this.initialized) {
             return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
-    
+
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'EXCEPTION ENCOUNTER') {
             return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! TABLE "' + tableName + '" DOESN\'T EXISTS!']]
@@ -425,13 +460,13 @@ export class DB {
         if (!columns) {
             columns = table[1].slice(1);
         }
-    
+
         let columnNames = table[1];
         let elementsValue = table[0][1].elements;
-    
+
         let row = new Array(columnNames.length).fill(null); // Crea una fila llena de nulls
         row[0] = elementsValue; // Establece el valor de auto incremento
-    
+
         // Asigna valores a las columnas correspondientes
         for (let i = 0; i < columnNames.length; i++) {
             let columnName = columnNames[i];
@@ -441,15 +476,14 @@ export class DB {
                 row[i] = values[columnIndex]; // Asigna el valor correspondiente a la columna
             }
         }
-    
+
         dbMethods.insert(table, row);
         table[0][1].elements++; // Actualiza el contador de elementos en los encabezados de la tabla
 
         return true;
-    
+
     }
     /**
-    * @async
     * @method delete
     * @description Deletes rows from a specified table based on a given condition.
     * @param {string} tableName - The name of the table.
@@ -458,7 +492,7 @@ export class DB {
     * @param {any} conditionValue - The value used for the condition.
     * @returns {Promise<boolean>} A boolean indicating whether the delete operation was successful or not.
     */
-    async delete({ tableName, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
+    delete({ tableName, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
         if (!this.initialized) {
             console.log('ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -500,7 +534,6 @@ export class DB {
     }
 
     /**
-    * @async
     * @method update
     * @description Updates rows in a specified table based on a given condition.
     * @param {string} tableName - The name of the table.
@@ -511,7 +544,7 @@ export class DB {
     * @param {any} conditionValue - The value used for the condition.
     * @returns {Promise<boolean>} A boolean indicating whether the update operation was successful or not.
     */
-    async update({ tableName, set = [], setValues, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
+    update({ tableName, set = [], setValues, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
         if (!this.initialized) {
             console.log('ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -581,12 +614,12 @@ export class DB {
     }
 
     /**
-    * @async
     * @method find
     * @description Retrieves rows from a specified table based on certain conditions.
     * @param {string} tableName - The name of the table.
     * @param {Boolean} [distinct=false] - Whether to retrieve distinct rows.
     * @param {Array<String>} [columns=this.getOneTable(tableName)[1]] - The list of columns to retrieve. All columns by default.
+    * @param {Array<{referenceTable, referenceColumn, columnName}>} joins
     * @param {string} [condition=this.getOneTable(tableName)[1][0]] - The column used as the condition for the search. Primary key by default.
     * @param {string} [operator='='] - The comparison operator for the condition. "=" by default.
     * @param {any} conditionValue - The value used for the condition.
@@ -608,19 +641,19 @@ export class DB {
 
         if (joins) {
             table = this.joinTables(this.getOneTable(tableName), joins);
-            if(table[0][0]=== 'EXCEPTION ENCOUNTER'){
+            if (table[0][0] === 'EXCEPTION ENCOUNTER') {
                 return table;
             }
         }
 
-        if(columns===undefined) {
+        if (columns === undefined) {
             columns = table[1];
         }
 
-        if(orderBy===undefined) {
+        if (orderBy === undefined) {
             orderBy = table[1][0]
         }
-        
+
         for (let i = 0; i < columns.length; i++) {
             if (!table[1].includes(columns[i])) {
                 return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columns[i] + '" IS NOT A VALID COLUMN!']];
@@ -713,7 +746,7 @@ export class DB {
         let sameJoinCount = 2;
 
         originTable = dbMethods.deepCopy(originTable);
-    
+
         originTable[1] = originTable[1].map(column => `${originTable[0][0]}.${column}`)
 
         let joinedTables = dbMethods.deepCopy(originTable);
@@ -723,11 +756,11 @@ export class DB {
         for (const join of joins) {
             let { referenceTable, referenceColumn, columnName } = join;
             const joinedTable = dbMethods.deepCopy(this.getOneTable(referenceTable));
-            if(joinedTable[0][0]==="EXCEPTION ENCOUNTER") {
+            if (joinedTable[0][0] === "EXCEPTION ENCOUNTER") {
                 console.log('TABLE "' + referenceTable + '" DOESN\'T EXIST!');
                 return [['EXCEPTION ENCOUNTER'], ['TABLE ' + referenceTable + ' DOESN\'T EXIST!']];
             }
-            if(tablesAlreadyJoined[0][0].split("|").includes(referenceTable)) {
+            if (tablesAlreadyJoined[0][0].split("|").includes(referenceTable)) {
                 referenceTable += sameJoinCount;
                 sameJoinCount++;
             }
@@ -746,14 +779,14 @@ export class DB {
                 console.log('COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!');
                 return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!']];
             }
-            
+
             let resultantJoinedTables = joinedTables.slice(0, 2);
-            
+
             for (let i = 2; i < joinedTables.length; i++) {
                 const value = joinedTables[i][columnIndex];
                 for (let j = 2; j < joinedTable.length; j++) {
                     if (joinedTable[j][referenceColumnIndex] === value) {
-                        resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j])) 
+                        resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j]))
                     }
                 }
             }
@@ -764,7 +797,6 @@ export class DB {
     }
 
     /**
-     * @async
      * @method retrieveRowIndexes
      * @description Searches for rows that meet a certain condition in a table.
      * @param {string} tableName - The name of the table.
@@ -774,12 +806,12 @@ export class DB {
      * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
     retrieveRowIndexes({ table, condition, operator, conditionValue }) {
-        
+
         let rows = [];
 
         let escapedPattern, regexPattern, regex;
 
-        if(condition === undefined) {
+        if (condition === undefined) {
             condition = table[1][0];
         }
 
@@ -976,7 +1008,8 @@ export class DB {
             console.log('YOU CAN\'T SAVE! DATABASE "' + this.name + '" NOT INITIALIZED');
             return [['EXCEPTION ENCOUNTER'], ['YOU CAN\'T SAVE! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
-        await fs.writeFile(this.filePath, JSON.stringify(this.tables, null, 0));
+        await fs.writeFile(this.dbFilePath, JSON.stringify(this.tables, null, 0));
+        await fs.writeFile(this.rmapFilePath, JSON.stringify(this.rmap, null, 0));
         return true;
     }
 
@@ -1048,13 +1081,20 @@ function getDbFolder() {
     return dbFolder;
 }
 
+function getRmapFolder() {
+    const baseDir = process.platform === 'win32' ? 'C:/nuedb/' : '/var/nuedb/';
+    const dbFolder = path.join(baseDir, 'rmaps');
+
+    return dbFolder;
+}
+
 /**
  * Gets the file path of the specified database.
  * @param {string} dbName - The name of the database.
  * @returns {Promise<string>} The file path of the specified database.
  * @private
  */
-async function getFilePath(dbName) {
+async function getDbFilePath(dbName) {
     const dbFolder = getDbFolder();
 
     try {
@@ -1070,6 +1110,22 @@ async function getFilePath(dbName) {
     return path.join(dbFolder, `${dbName}_db.json`);
 }
 
+async function getRmapFilePath(dbName) {
+    const rmapFolder = getRmapFolder();
+
+    try {
+        await fs.access(rmapFolder);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            await fs.mkdir(rmapFolder, { recursive: true });
+        } else {
+            throw error;
+        }
+    }
+
+    return path.join(rmapFolder, `${dbName}.rmap.json`);
+}
+
 /**
  * Gets all database names.
  * @returns {Promise<Array>} An array containing all database names.
@@ -1078,6 +1134,11 @@ async function getFilePath(dbName) {
 async function getAllDatabases() {
     let files = await fs.readdir(getDbFolder());
     return files.map(file => file.split('_')[0]);
+}
+
+async function getAllRmaps() {
+    let files = await fs.readdir(getRmapFolder());
+    return files.map(file => file.split('.')[0]);
 }
 
 /**
@@ -1089,4 +1150,9 @@ async function getAllDatabases() {
 async function getDatabasePosition(dbName) {
     let databases = await getAllDatabases();
     return treeSearch(databases, dbName);
+}
+
+async function getRmapPosition(dbName) {
+    let rmaps = await getAllRmaps();
+    return treeSearch(rmaps, dbName);
 }
