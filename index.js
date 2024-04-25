@@ -111,6 +111,12 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['TABLE WITH NAME "' + tableName + '" NOT CREATED! TABLE NAME "' + tableName + '" IS A KEYWORD!']];
         }
 
+        const isValid = treeSearch(tableName, " ");
+        if(isValid !== -1) {
+            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. TABLE NAMES CANNOT HAVE WHITESPACES');
+            return [['EXCEPTION ENCOUNTER'], ['TABLE WITH NAME "' + tableName + '" NOT CREATED! TABLE NAMES CANNOT HAVE WHITESPACES']];
+        }
+
         let table = [[], []];
 
         table[0][0] = tableName;
@@ -321,7 +327,6 @@ export class DB {
     */
     getAllTables() {
         if (!this.initialized) {
-            console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
         return this.tables;
@@ -335,7 +340,6 @@ export class DB {
     */
     getOneTable(tableName) {
         if (!this.initialized) {
-            console.log('TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
         let tableNames = this.showAllTableNames();
@@ -353,7 +357,6 @@ export class DB {
     */
     async showAllTables() {
         if (!this.initialized) {
-            console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
         let tablesCopy = dbMethods.deepCopy(this.tables);
@@ -370,7 +373,6 @@ export class DB {
     */
     showAllTableNames() {
         if (!this.initialized) {
-            console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
         let tableNames = [];
@@ -388,7 +390,6 @@ export class DB {
     */
     describeOneTable(tableName) {
         if (!this.initialized) {
-            console.log('TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
         let tableNames = this.showAllTableNames();
@@ -413,13 +414,11 @@ export class DB {
     */
     async insert({ tableName, columns, values }) {
         if (!this.initialized) {
-            console.log('ROW CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
         }
     
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'EXCEPTION ENCOUNTER') {
-            console.log('ROW CANNOT BE CREATED! TABLE "' + tableName + '" DOESN\'T EXISTS!');
             return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! TABLE "' + tableName + '" DOESN\'T EXISTS!']]
         }
 
@@ -438,6 +437,7 @@ export class DB {
             let columnName = columnNames[i];
             let columnIndex = columns.indexOf(columnName);
             if (columnIndex !== -1) {
+                values[columnIndex] === undefined ? values[columnIndex] = null : values[columnIndex] = values[columnIndex];
                 row[i] = values[columnIndex]; // Asigna el valor correspondiente a la columna
             }
         }
@@ -704,31 +704,37 @@ export class DB {
             return [[table[0][0]], columns, ...result];
         }
 
-        return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS NOT FOUND!']]
+        return [[table[0][0]], columns]
 
     }
 
     joinTables(originTable, joins) {
 
+        let sameJoinCount = 2;
+
         originTable = dbMethods.deepCopy(originTable);
     
         originTable[1] = originTable[1].map(column => `${originTable[0][0]}.${column}`)
 
-        let joinedTables = originTable;
+        let joinedTables = dbMethods.deepCopy(originTable);
 
-        const tablesAlreadyJoined = originTable;
+        const tablesAlreadyJoined = dbMethods.deepCopy(originTable);
 
         for (const join of joins) {
-            const { referenceTable, referenceColumn, columnName } = join;
+            let { referenceTable, referenceColumn, columnName } = join;
             const joinedTable = dbMethods.deepCopy(this.getOneTable(referenceTable));
-            if(tablesAlreadyJoined.includes(joinedTable)) {
-                console.log('TABLE "' + joinedTable[0][0] + '" IS ALREADY JOINED!');
-                return [['EXCEPTION ENCOUNTER'], ['TABLE "' + joinedTable[0][0] + '" IS ALREADY JOINED!']];
+            if(joinedTable[0][0]==="EXCEPTION ENCOUNTER") {
+                console.log('TABLE "' + referenceTable + '" DOESN\'T EXIST!');
+                return [['EXCEPTION ENCOUNTER'], ['TABLE ' + referenceTable + ' DOESN\'T EXIST!']];
+            }
+            if(tablesAlreadyJoined[0][0].split("|").includes(referenceTable)) {
+                referenceTable += sameJoinCount;
+                sameJoinCount++;
             }
             tablesAlreadyJoined.push(joinedTable);
             const joinedTableColumns = joinedTable[1];
             joinedTables[0][0] = joinedTables[0][0].concat(`|${referenceTable}`)
-            joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${join.referenceTable}.${column}`));
+            joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${referenceTable}.${column}`));
             const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn.split('.').pop());
             if (referenceColumnIndex === -1) {
                 console.log('REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!');
