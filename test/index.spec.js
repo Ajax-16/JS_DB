@@ -103,6 +103,7 @@ describe("Create table test", () => {
         expect(createdTable[1][0]).toEqual("id")
     })
     test("Should create a table with reference keys", async () => {
+        await testDBInstance.createTable({ tableName: "test_table_2", columns: ["test_column_1", "test_column_2"] })
         const tableCreate = await testDBInstance.createTable({ tableName: "test_fk_table", primaryKey: "id", columns: ["test_column_1", "test_column_2"], foreignKeys: [{ name: "fk_1", columnName: "test_fk_column_1", referenceTable: "test_table_2", referenceColumn: "test_column_1" }, { name: "fk_1", columnName: "test_fk_column_2", referenceTable: "test_table_2", referenceColumn: "test_column_2" }] })
         expect(tableCreate).toBe(true);
     })
