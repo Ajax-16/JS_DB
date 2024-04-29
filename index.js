@@ -1,8 +1,9 @@
 import dbMethods from './algorithms/array_methods.js';
+import { nueOrm } from './algorithms/nue_orm.js';
 import { treeSearch } from './algorithms/tree_search.js';
 import { Cache } from './utils/cache.js';
 import { promises as fs } from 'fs';
-import path from 'path';
+import path, { join } from 'path';
 
 /**
  * @class DB
@@ -86,7 +87,7 @@ export class DB {
                 }
                 await fs.writeFile(this.rmapFilePath, '[]');
                 if (await getRmapPosition(this.name) === -1) {
-                    
+
                 }
                 this.initialized = true;
             } catch (writeError) {
@@ -169,7 +170,7 @@ export class DB {
                 }
 
                 if (name === undefined) {
-                    name = referenceTable.concat(`_fk_${referenceColumn}`);
+                    name = "fk_".concat(referenceTable.concat(`_${referenceColumn}`));
                 }
 
                 table[0][1].references.push({ name, columnName, referenceTable, referenceColumn })
@@ -205,19 +206,36 @@ export class DB {
 
         console.log('TABLE WITH NAME "' + tableName + '" CREATED SUCCESSFULY');
 
-        this.createRmap(table);
+        this.updateRmap({ name: table[0][0], columns: table[1], references: table[0][1].references });
 
         return true;
 
     }
 
-    createRmap(newTable) {
-        const rmapObj = {}
+    updateRmap(newTable, levels = this.rmap) {
 
-        rmapObj.name = newTable[0][0];
-        rmapObj.columns = newTable[1];
-        console.log(rmapObj)
+        const newTableToAdd = {
+            name: newTable.name,
+            columns: newTable.columns,
+            contains: []
+        }
 
+        if (newTable.references) {
+            for(const reference of newTable.references) {
+                for (const level of levels) {
+                    if (level.contains) {
+                        this.updateRmap(newTable, level.contains);
+                    }
+                }
+                for (const level of levels) {
+                    if (level.name === reference.referenceTable) {
+                        level.contains.push(newTableToAdd)
+                    }
+                }
+            }
+        } else {
+            levels.push(newTableToAdd)
+        }
     }
 
     /**
@@ -627,7 +645,7 @@ export class DB {
     * @param {number} limit - The maximum number of rows to retrieve.
     * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
     */
-    find({ tableName, distinct = false, columns, joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy, asc = true }) {
+    find({ tableName, distinct = false, columns, joins, orm = false, condition, operator = '=', conditionValue, offset = 0, limit, orderBy, asc = true }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -640,7 +658,7 @@ export class DB {
         }
 
         if (joins) {
-            table = this.joinTables(this.getOneTable(tableName), joins);
+            table = this.joinTables(this.getOneTable(tableName), joins, orm);
             if (table[0][0] === 'EXCEPTION ENCOUNTER') {
                 return table;
             }
@@ -716,18 +734,22 @@ export class DB {
                 return [[tableName], columns];
             }
 
-            // Devuelve todas las filas de las columnas selceccionadas.
-            for (let i = offset; i < rows.length; i++) {
-                let rowIndex = rows[i];
-                let row = [];
-                for (let j = 0; j < columns.length; j++) {
-                    let column = columns[j];
-                    let columnIndex = treeSearch(table[1], column);
-                    if (columnIndex !== -1) {
-                        row.push(table[rowIndex][columnIndex]);
+            if (orm) {
+                nueOrm({table, rows, rmap: this.rmap, columns, join: joins})
+            } else {
+                // Devuelve todas las filas de las columnas selceccionadas.
+                for (let i = offset; i < rows.length; i++) {
+                    let rowIndex = rows[i];
+                    let row = [];
+                    for (let j = 0; j < columns.length; j++) {
+                        let column = columns[j];
+                        let columnIndex = treeSearch(table[1], column);
+                        if (columnIndex !== -1) {
+                            row.push(table[rowIndex][columnIndex]);
+                        }
                     }
+                    result.push(row);
                 }
-                result.push(row);
             }
 
             if (limit && limit < rows.length) {
@@ -741,7 +763,7 @@ export class DB {
 
     }
 
-    joinTables(originTable, joins) {
+    joinTables(originTable, joins, orm) {
 
         let sameJoinCount = 2;
 
@@ -751,8 +773,6 @@ export class DB {
 
         let joinedTables = dbMethods.deepCopy(originTable);
 
-        const tablesAlreadyJoined = dbMethods.deepCopy(originTable);
-
         for (const join of joins) {
             let { referenceTable, referenceColumn, columnName } = join;
             const joinedTable = dbMethods.deepCopy(this.getOneTable(referenceTable));
@@ -760,14 +780,11 @@ export class DB {
                 console.log('TABLE "' + referenceTable + '" DOESN\'T EXIST!');
                 return [['EXCEPTION ENCOUNTER'], ['TABLE ' + referenceTable + ' DOESN\'T EXIST!']];
             }
-            if (tablesAlreadyJoined[0][0].split("|").includes(referenceTable)) {
-                referenceTable += sameJoinCount;
+            if ([...joinedTables][0][0].split("|").includes(referenceTable)) {
+                referenceTable += `_${sameJoinCount}`;
                 sameJoinCount++;
             }
-            tablesAlreadyJoined.push(joinedTable);
-            const joinedTableColumns = joinedTable[1];
-            joinedTables[0][0] = joinedTables[0][0].concat(`|${referenceTable}`)
-            joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${referenceTable}.${column}`));
+           
             const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn.split('.').pop());
             if (referenceColumnIndex === -1) {
                 console.log('REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!');
@@ -786,11 +803,22 @@ export class DB {
                 const value = joinedTables[i][columnIndex];
                 for (let j = 2; j < joinedTable.length; j++) {
                     if (joinedTable[j][referenceColumnIndex] === value) {
-                        resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j]))
+                        if(orm) {
+                            resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j]).concat([[columnIndex, (joinedTables[1].length + referenceColumnIndex)]]))
+                        }else {
+                            resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j]))
+                        }
                     }
                 }
             }
+
             joinedTables = resultantJoinedTables;
+            const joinedTableColumns = joinedTable[1];
+            joinedTables[0][0] = joinedTables[0][0].concat(`|${referenceTable}`)
+            joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${referenceTable}.${column}`));
+            if(orm) {
+                joinedTables[1].push(`${referenceTable}|reference`)
+            }
         }
 
         return joinedTables;
