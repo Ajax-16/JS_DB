@@ -221,7 +221,7 @@ export class DB {
         }
 
         if (newTable.references) {
-            for(const reference of newTable.references) {
+            for (const reference of newTable.references) {
                 for (const level of levels) {
                     if (level.contains) {
                         this.updateRmap(newTable, level.contains);
@@ -645,7 +645,7 @@ export class DB {
     * @param {number} limit - The maximum number of rows to retrieve.
     * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
     */
-    find({ tableName, distinct = false, columns, joins, orm = false, condition, operator = '=', conditionValue, offset = 0, limit, orderBy, asc = true }) {
+    find({ tableName, distinct = false, columns, joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy, asc = true }) {
         if (!this.initialized) {
             console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
@@ -658,7 +658,7 @@ export class DB {
         }
 
         if (joins) {
-            table = this.joinTables(this.getOneTable(tableName), joins, orm);
+            table = this.joinTables(this.getOneTable(tableName), joins);
             if (table[0][0] === 'EXCEPTION ENCOUNTER') {
                 return table;
             }
@@ -734,22 +734,18 @@ export class DB {
                 return [[tableName], columns];
             }
 
-            if (orm) {
-                nueOrm({table, rows, rmap: this.rmap, columns, join: joins})
-            } else {
-                // Devuelve todas las filas de las columnas selceccionadas.
-                for (let i = offset; i < rows.length; i++) {
-                    let rowIndex = rows[i];
-                    let row = [];
-                    for (let j = 0; j < columns.length; j++) {
-                        let column = columns[j];
-                        let columnIndex = treeSearch(table[1], column);
-                        if (columnIndex !== -1) {
-                            row.push(table[rowIndex][columnIndex]);
-                        }
+            // Devuelve todas las filas de las columnas selceccionadas.
+            for (let i = offset; i < rows.length; i++) {
+                let rowIndex = rows[i];
+                let row = [];
+                for (let j = 0; j < columns.length; j++) {
+                    let column = columns[j];
+                    let columnIndex = treeSearch(table[1], column);
+                    if (columnIndex !== -1) {
+                        row.push(table[rowIndex][columnIndex]);
                     }
-                    result.push(row);
                 }
+                result.push(row);
             }
 
             if (limit && limit < rows.length) {
@@ -774,7 +770,7 @@ export class DB {
         let joinedTables = dbMethods.deepCopy(originTable);
 
         for (const join of joins) {
-            let { referenceTable, referenceColumn, columnName } = join;
+            let { referenceTable, firstColumn, secondColumn } = join;
             const joinedTable = dbMethods.deepCopy(this.getOneTable(referenceTable));
             if (joinedTable[0][0] === "EXCEPTION ENCOUNTER") {
                 console.log('TABLE "' + referenceTable + '" DOESN\'T EXIST!');
@@ -784,45 +780,43 @@ export class DB {
                 referenceTable += `_${sameJoinCount}`;
                 sameJoinCount++;
             }
-           
-            const referenceColumnIndex = treeSearch(joinedTable[1], referenceColumn.split('.').pop());
-            if (referenceColumnIndex === -1) {
-                console.log('REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!');
-                return [['EXCEPTION ENCOUNTER'], ['REFERENCE COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!']];
-            }
 
-            const columnIndex = treeSearch(joinedTables[1], columnName);
-            if (columnIndex === -1) {
-                console.log('COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!');
-                return [['EXCEPTION ENCOUNTER'], ['COLUMN "' + columnName.split('.')[1] + '" DOESN\'T EXIST ON TABLE "' + joinedTables[0][0] + '"!']];
-            }
-
-            let resultantJoinedTables = joinedTables.slice(0, 2);
-
-            for (let i = 2; i < joinedTables.length; i++) {
-                const value = joinedTables[i][columnIndex];
-                for (let j = 2; j < joinedTable.length; j++) {
-                    if (joinedTable[j][referenceColumnIndex] === value) {
-                        if(orm) {
-                            resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j]).concat([[columnIndex, (joinedTables[1].length + referenceColumnIndex)]]))
-                        }else {
-                            resultantJoinedTables.push(joinedTables[i].concat(joinedTable[j]))
-                        }
-                    }
-                }
-            }
-
-            joinedTables = resultantJoinedTables;
             const joinedTableColumns = joinedTable[1];
             joinedTables[0][0] = joinedTables[0][0].concat(`|${referenceTable}`)
             joinedTables[1] = joinedTables[1].concat(joinedTableColumns.map(column => `${referenceTable}.${column}`));
-            if(orm) {
+
+            const firstColumnIndex = treeSearch(joinedTables[1], firstColumn);
+
+            const secondColumnIndex = treeSearch(joinedTables[1], secondColumn);
+
+            let cartesianProduct = joinedTables.slice(0, 2);
+            
+            for (let i = 2; i < joinedTables.length; i++) {
+                for (let j = 2; j < joinedTable.length; j++) {
+                    cartesianProduct.push(joinedTables[i].concat(joinedTable[j]))
+                }
+            }
+            
+            joinedTables = joinedTables.concat(cartesianProduct);
+
+            joinedTables = this.innerJoin(joinedTables, firstColumnIndex, secondColumnIndex)
+
+            if (orm) {
                 joinedTables[1].push(`${referenceTable}|reference`)
             }
         }
 
         return joinedTables;
     }
+
+    innerJoin (joinedTables, firstColumnIndex, secondColumnIndex) {
+        let headersCount = 0;
+        return joinedTables.filter(row => {
+            headersCount++;
+            return headersCount > 2 ? row[firstColumnIndex] === row[secondColumnIndex] : row;
+        });
+    }
+
 
     /**
      * @method retrieveRowIndexes
