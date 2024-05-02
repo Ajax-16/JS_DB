@@ -759,7 +759,7 @@ export class DB {
 
     }
 
-    joinTables(originTable, joins, orm) {
+    joinTables(originTable, joins) {
 
         let sameJoinCount = 2;
 
@@ -789,7 +789,7 @@ export class DB {
 
             const secondColumnIndex = treeSearch(joinedTables[1], secondColumn);
 
-            let cartesianProduct = joinedTables.slice(0, 2);
+            let cartesianProduct = []
             
             for (let i = 2; i < joinedTables.length; i++) {
                 for (let j = 2; j < joinedTable.length; j++) {
@@ -797,24 +797,15 @@ export class DB {
                 }
             }
             
-            joinedTables = joinedTables.concat(cartesianProduct);
+            joinedTables = joinedTables.slice(0, 2).concat(this.innerJoin(cartesianProduct, firstColumnIndex, secondColumnIndex))
 
-            joinedTables = this.innerJoin(joinedTables, firstColumnIndex, secondColumnIndex)
-
-            if (orm) {
-                joinedTables[1].push(`${referenceTable}|reference`)
-            }
         }
 
         return joinedTables;
     }
 
-    innerJoin (joinedTables, firstColumnIndex, secondColumnIndex) {
-        let headersCount = 0;
-        return joinedTables.filter(row => {
-            headersCount++;
-            return headersCount > 2 ? row[firstColumnIndex] === row[secondColumnIndex] : row;
-        });
+    innerJoin (cartesianProduct, firstColumnIndex, secondColumnIndex) {
+        return cartesianProduct.filter(row => row[firstColumnIndex] === row[secondColumnIndex]);
     }
 
 
