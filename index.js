@@ -15,10 +15,13 @@ export class DB {
     */
     tables = [];
     /**
+    * @property {Array} sysTables - An array to store tables in the system database.
+    */
+    sysTables = [];
+    /**
     * @property {Array} rmap - An array to store the database structure.
     */
     rmap = [];
-
     /**
     * @property {string} name - The name of the database.
     */
@@ -27,6 +30,10 @@ export class DB {
     * @property {string} dbFilePath - The file path to the current database.
     */
     dbFilePath = '';
+    /**
+    * @property {string} sysFilePath - The file path to the system database.
+    */
+    sysFilePath = '';
     /**
     * @property {string} rmapFilePath - The file path to the current database rmap.
     */
@@ -52,10 +59,10 @@ export class DB {
      * @param {string} name - The name of the database.
      * @param {number} [cacheBufferSize=65536] - The size of the predefined cache buffer.
      */
-    constructor(name, cacheBufferSize = 65536) {
+    constructor(name, cacheBufferSize = 65536, sysFolder) {
         this.name = name;
         this.cache = new Cache(cacheBufferSize);
-        fs.mkdir(getDbFolder(), { recursive: true });
+
     }
 
     /**
@@ -74,24 +81,75 @@ export class DB {
             this.rmap = JSON.parse(rmapContent);
             this.initialized = true;
         } catch (readError) {
-            this.tables = [];
+
             this.rmap = [];
 
             try {
-                await fs.writeFile(this.dbFilePath, '[]');
                 if (await getDatabasePosition(this.name) === -1) {
+                    await this.sysInit();
+                    let wasInitialized = this.toggleInitialized();
+                    await this.insert({ tableName: "databases", values: [this.name] });
+                    if(!wasInitialized) {
+                        this.initialized = false;
+                    }
+                    this.sysTables = this.tables;
                     console.log('DATABASE CREATED SUCCESSFULY');
                 }
-                await fs.writeFile(this.rmapFilePath, '[]');
+                this.tables = [];
+                await fs.writeFile(this.dbFilePath, '[]');
+
                 if (await getRmapPosition(this.name) === -1) {
 
                 }
+                await fs.writeFile(this.rmapFilePath, '[]');
                 this.initialized = true;
             } catch (writeError) {
                 console.error('ERROR READING DATABASE: ', writeError);
             }
         }
         return this.initialized;
+    }
+
+    async sysInit() {
+        try {
+            this.sysFilePath = await getSysFilePath()
+            const sysContent = await fs.readFile(this.sysFilePath, 'utf8');
+            this.tables = JSON.parse(sysContent);
+            this.initialized;
+        } catch (readError) {
+            this.tables = [];
+
+            try {
+                await fs.writeFile(this.sysFilePath, '[]');
+                let wasInitialized = this.toggleInitialized()
+                await this.createTable({
+                    tableName: "databases",
+                    columns: ["name"]
+                })
+                await this.createTable({
+                    tableName: "users",
+                    columns: ["username", "password", "role"]
+                })
+                this.sysTables = this.tables;
+                await this.sysSave();
+                if (!wasInitialized) {
+                    this.initialized = false;
+                }
+            } catch (writeError) {
+                console.error('ERROR READING DATABASE: ', writeError);
+            }
+        }
+        return this.initialized;
+    }
+
+    toggleInitialized() {
+        let wasInitialized = false;
+        if (!this.initialized) {
+            this.initialized = true;
+        } else {
+            wasInitialized = true;
+        }
+        return wasInitialized;
     }
 
     /**
@@ -787,13 +845,13 @@ export class DB {
             const secondColumnIndex = treeSearch(joinedTables[1], secondColumn);
 
             let cartesianProduct = []
-            
+
             for (let i = 2; i < joinedTables.length; i++) {
                 for (let j = 2; j < joinedTable.length; j++) {
                     cartesianProduct.push(joinedTables[i].concat(joinedTable[j]))
                 }
             }
-            
+
             joinedTables = joinedTables.slice(0, 2).concat(this.innerJoin(cartesianProduct, firstColumnIndex, secondColumnIndex))
 
         }
@@ -801,7 +859,7 @@ export class DB {
         return joinedTables;
     }
 
-    innerJoin (cartesianProduct, firstColumnIndex, secondColumnIndex) {
+    innerJoin(cartesianProduct, firstColumnIndex, secondColumnIndex) {
         return cartesianProduct.filter(row => row[firstColumnIndex] === row[secondColumnIndex]);
     }
 
@@ -1019,7 +1077,13 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['YOU CAN\'T SAVE! DATABASE "' + this.name + '" NOT INITIALIZED']];
         }
         await fs.writeFile(this.dbFilePath, JSON.stringify(this.tables, null, 0));
+        await fs.writeFile(this.sysFilePath, JSON.stringify(this.sysTables, null, 0))
         await fs.writeFile(this.rmapFilePath, JSON.stringify(this.rmap, null, 0));
+        return true;
+    }
+
+    async sysSave() {
+        await fs.writeFile(this.sysFilePath, JSON.stringify(this.sysTables, null, 0))
         return true;
     }
 
@@ -1091,6 +1155,13 @@ function getDbFolder() {
     return dbFolder;
 }
 
+function getSysFolder() {
+    const baseDir = process.platform === 'win32' ? 'C:/nuedb/' : '/var/nuedb/';
+    const sysFolder = path.join(baseDir, 'system');
+
+    return sysFolder;
+}
+
 function getRmapFolder() {
     const baseDir = process.platform === 'win32' ? 'C:/nuedb/' : '/var/nuedb/';
     const dbFolder = path.join(baseDir, 'rmaps');
@@ -1118,6 +1189,22 @@ async function getDbFilePath(dbName) {
     }
 
     return path.join(dbFolder, `${dbName}_db.json`);
+}
+
+async function getSysFilePath() {
+    const sysFolder = getSysFolder();
+
+    try {
+        await fs.access(sysFolder);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            await fs.mkdir(sysFolder, { recursive: true });
+        } else {
+            throw error;
+        }
+    }
+
+    return path.join(sysFolder, `system.json`);
 }
 
 async function getRmapFilePath(dbName) {
