@@ -1,9 +1,8 @@
 import dbMethods from './algorithms/array_methods.js';
-import { nueOrm } from './algorithms/nue_orm.js';
 import { treeSearch } from './algorithms/tree_search.js';
 import { Cache } from './utils/cache.js';
 import { promises as fs } from 'fs';
-import path, { join } from 'path';
+import path from 'path';
 
 /**
  * @class DB
@@ -46,8 +45,6 @@ export class DB {
     * @property {Cache}
     */
     cache;
-
-    transactionEnded = false;
 
     /**
      * Creates an instance of DB.
