@@ -56,7 +56,6 @@ export class DB {
     /**
      * Creates an instance of DB.
      * @constructor
-     * @param {string} name - The name of the database.
      * @param {number} [cacheBufferSize=65536] - The size of the predefined cache buffer.
      */
     constructor(cacheBufferSize = 65536) {
@@ -86,48 +85,6 @@ export class DB {
             console.log(`DATABASE ${dbName} DOESN'T EXIST!`)
         }
         return this.initialized;
-    }
-
-    async sysInit() {
-        try {
-            this.sysFilePath = await getSysFilePath()
-            const sysContent = await fs.readFile(this.sysFilePath, 'utf8');
-            this.tables = JSON.parse(sysContent);
-            this.initialized;
-        } catch (readError) {
-            this.tables = [];
-
-            try {
-                await fs.writeFile(this.sysFilePath, '[]');
-                let wasInitialized = this.toggleInitialized()
-                await this.createTable({
-                    tableName: "databases",
-                    columns: ["name"]
-                })
-                await this.createTable({
-                    tableName: "users",
-                    columns: ["username", "password", "role"]
-                })
-                this.sysTables = this.tables;
-                await this.sysSave();
-                if (!wasInitialized) {
-                    this.initialized = false;
-                }
-            } catch (writeError) {
-                console.error('ERROR READING DATABASE: ', writeError);
-            }
-        }
-        return this.initialized;
-    }
-
-    toggleInitialized() {
-        let wasInitialized = false;
-        if (!this.initialized) {
-            this.initialized = true;
-        } else {
-            wasInitialized = true;
-        }
-        return wasInitialized;
     }
 
     /**
