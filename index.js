@@ -59,53 +59,31 @@ export class DB {
      * @param {string} name - The name of the database.
      * @param {number} [cacheBufferSize=65536] - The size of the predefined cache buffer.
      */
-    constructor(name, cacheBufferSize = 65536, sysFolder) {
-        this.name = name;
+    constructor(cacheBufferSize = 65536) {
         this.cache = new Cache(cacheBufferSize);
-
+        fs.mkdir(getFolder('data'), { recursive: true });
     }
 
     /**
     * @async
     * @method init
-    * @description Initializes the database by loading existing data or creating a new file.
+    * @description Initializes the database by loading existing data.
     * @returns {Promise<void>}
     */
-    async init() {
+    async init(dbFolder, dbName) {
         try {
-            this.dbFilePath = await getDbFilePath(this.name);
-            this.rmapFilePath = await getRmapFilePath(this.name);
+            this.dbFilePath = await getFilePath(dbName, dbFolder);
+            if (dbFolder === 'data') {
+                this.rmapFilePath = await getFilePath(dbName + ".rmap", 'rmaps');
+                const rmapContent = await fs.readFile(this.rmapFilePath, 'utf8');
+                this.rmap = JSON.parse(rmapContent);
+            }
+            this.name = dbName;
             const dbContent = await fs.readFile(this.dbFilePath, 'utf8');
-            const rmapContent = await fs.readFile(this.rmapFilePath, 'utf8')
             this.tables = JSON.parse(dbContent);
-            this.rmap = JSON.parse(rmapContent);
             this.initialized = true;
         } catch (readError) {
-
-            this.rmap = [];
-
-            try {
-                if (await getDatabasePosition(this.name) === -1) {
-                    await this.sysInit();
-                    let wasInitialized = this.toggleInitialized();
-                    await this.insert({ tableName: "databases", values: [this.name] });
-                    if(!wasInitialized) {
-                        this.initialized = false;
-                    }
-                    this.sysTables = this.tables;
-                    console.log('DATABASE CREATED SUCCESSFULY');
-                }
-                this.tables = [];
-                await fs.writeFile(this.dbFilePath, '[]');
-
-                if (await getRmapPosition(this.name) === -1) {
-
-                }
-                await fs.writeFile(this.rmapFilePath, '[]');
-                this.initialized = true;
-            } catch (writeError) {
-                console.error('ERROR READING DATABASE: ', writeError);
-            }
+            console.log(`DATABASE ${dbName} DOESN'T EXIST!`)
         }
         return this.initialized;
     }
@@ -165,8 +143,8 @@ export class DB {
     createTable({ tableName = 'table', primaryKey = 'id', columns = [], foreignKeys }) {
 
         if (!this.initialized) {
-            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. DATABASE "' + this.name + '" NOT INITIALIZED! ');
-            return [['EXCEPTION ENCOUNTER'], ['TABLE CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. NO DATABASE INITIALIZED! ');
+            return [['EXCEPTION ENCOUNTER'], ['TABLE CANNOT BE CREATED! NO DATABASE INITIALIZED!']];
         }
 
         let tableExist = this.getOneTable(tableName);
@@ -301,7 +279,7 @@ export class DB {
     */
     dropTable(tableName) {
         if (!this.initialized) {
-            console.log('TABLE WITH NAME "' + tableName + '" COULD NOT BE DROPPED! DATABASE "' + this.name + '" NOT INITIALIZED!');
+            console.log('TABLE WITH NAME "' + tableName + '" COULD NOT BE DROPPED! NO DATABASE INITIALIZED!');
             return false;
         }
 
@@ -333,8 +311,8 @@ export class DB {
     */
     alterTable({ tableName, operation, target, options = { save: false }, elements }) {
         if (!this.initialized) {
-            console.log('ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!');
-            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            console.log('ANY TABLES FOUND! NO DATABASE INITIALIZED!');
+            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! NO DATABASE INITIALIZED!']];
         }
 
         let table = this.getOneTable(tableName);
@@ -436,7 +414,7 @@ export class DB {
     */
     getAllTables() {
         if (!this.initialized) {
-            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! NO DATABASE INITIALIZED!']];
         }
         return this.tables;
     }
@@ -449,7 +427,7 @@ export class DB {
     */
     getOneTable(tableName) {
         if (!this.initialized) {
-            return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND! NO DATABASE INITIALIZED!']];
         }
         let tableNames = this.showAllTableNames();
         let position = treeSearch(tableNames, tableName);
@@ -466,7 +444,7 @@ export class DB {
     */
     showAllTables() {
         if (!this.initialized) {
-            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! NO DATABASE INITIALIZED!']];
         }
         let tablesCopy = dbMethods.deepCopy(this.tables);
         for (let i = 0; i < tablesCopy.length; i++) {
@@ -482,7 +460,7 @@ export class DB {
     */
     showAllTableNames() {
         if (!this.initialized) {
-            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! NO DATABASE INITIALIZED!']];
         }
         let tableNames = [];
         for (let i = 0; i < this.tables.length; i++) {
@@ -499,7 +477,7 @@ export class DB {
     */
     describeOneTable(tableName) {
         if (!this.initialized) {
-            return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            return [['EXCEPTION ENCOUNTER'], ['TABLE NOT FOUND! NO DATABASE INITIALIZED!']];
         }
         let tableNames = this.showAllTableNames();
         let position = treeSearch(tableNames, tableName);
@@ -522,7 +500,7 @@ export class DB {
     */
     insert({ tableName, columns, values }) {
         if (!this.initialized) {
-            return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            return [['EXCEPTION ENCOUNTER'], ['ROW CANNOT BE CREATED! NO DATABASE INITIALIZED!']];
         }
 
         let table = this.getOneTable(tableName);
@@ -567,8 +545,8 @@ export class DB {
     */
     delete({ tableName, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
         if (!this.initialized) {
-            console.log('ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED!');
-            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            console.log('ROW OR ROWS CANNOT BE DELETED! NO DATABASE INITIALIZED!');
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! NO DATABASE INITIALIZED!']];
         }
 
         let table = this.getOneTable(tableName);
@@ -619,8 +597,8 @@ export class DB {
     */
     update({ tableName, set = [], setValues, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
         if (!this.initialized) {
-            console.log('ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED!');
-            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            console.log('ROW OR ROWS CANNOT BE UPDATED! NO DATABASE INITIALIZED!');
+            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! NO DATABASE INITIALIZED!']];
         }
         const table = this.getOneTable(tableName);
 
@@ -702,8 +680,8 @@ export class DB {
     */
     find({ tableName, distinct = false, columns, joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy, asc = true }) {
         if (!this.initialized) {
-            console.log('DATABASE "' + this.name + '" NOT INITIALIZED!');
-            return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + this.name + '" NOT INITIALIZED!']];
+            console.log('NO DATABASE INITIALIZED!');
+            return [['EXCEPTION ENCOUNTER'], ['NO DATABASE INITIALIZED!']];
         }
 
         let table = this.getOneTable(tableName);
@@ -1073,20 +1051,40 @@ export class DB {
     */
     async save() {
         if (!this.initialized) {
-            console.log('YOU CAN\'T SAVE! DATABASE "' + this.name + '" NOT INITIALIZED');
-            return [['EXCEPTION ENCOUNTER'], ['YOU CAN\'T SAVE! DATABASE "' + this.name + '" NOT INITIALIZED']];
+            console.log('YOU CAN\'T SAVE! NO DATABASE INITIALIZED');
+            return [['EXCEPTION ENCOUNTER'], ['YOU CAN\'T SAVE! NO DATABASE INITIALIZED']];
         }
         await fs.writeFile(this.dbFilePath, JSON.stringify(this.tables, null, 0));
-        await fs.writeFile(this.sysFilePath, JSON.stringify(this.sysTables, null, 0))
+        return true;
+    }
+
+    async rmapSave() {
         await fs.writeFile(this.rmapFilePath, JSON.stringify(this.rmap, null, 0));
-        return true;
     }
 
-    async sysSave() {
-        await fs.writeFile(this.sysFilePath, JSON.stringify(this.sysTables, null, 0))
-        return true;
-    }
+}
 
+export async function createDb(dbFolder, dbName) {
+    let rmapFilePath;
+    const dbFilePath = await getFilePath(dbName, dbFolder);
+    if (dbFolder === 'data') {
+        rmapFilePath = await getFilePath(dbName + ".rmap", 'rmaps');
+    }
+    try {
+        if (await checkFileExists(dbFilePath)) {
+            console.log(`DATABASE "${dbName}" ALREADY EXIST`);
+            return false;
+        }
+        await fs.writeFile(dbFilePath, '[]');
+        console.log(`DATABASE "${dbName}" CREATED SUCCESSFULY`);
+        if (rmapFilePath) {
+            await fs.writeFile(rmapFilePath, '[]');
+        }
+        return true;
+    } catch (writeError) {
+        console.error('ERROR READING DATABASE: ', writeError);
+        return false;
+    }
 }
 
 /**
@@ -1096,10 +1094,11 @@ export class DB {
  * @param {string} dbName - The name of the database to delete.
  * @returns {Promise<boolean>} True if the database was successfully deleted; otherwise, it returns false.
  */
-export async function dropDb(dbName) {
+export async function dropDb(dbFolder, dbName) {
     try {
-        const dbPath = path.join(getDbFolder(), `/${dbName}_db.json`);
+        const dbPath = path.join(getFolder(dbFolder), `/${dbName}.json`);
         await fs.unlink(dbPath);
+        console.log(dbPath)
         console.log('DATABASE DELETED SUCCESSFULLY');
         return true;
     } catch (err) {
@@ -1121,22 +1120,14 @@ export async function dropDb(dbName) {
 */
 export async function describeDatabase(currentDb, dbName) {
 
-    let dbNamePos = await getDatabasePosition(dbName);
+    const newDb = new DB();
 
-    if (dbNamePos === -1) {
-        console.log('DATABASE "' + dbName + '" DOES\'T EXIST!')
-        return [['EXCEPTION ENCOUNTER'], ['DATABASE NOT FOUND! DATABASE "' + dbName + '" DOES\'T EXIST!']];
-    }
-
-    let databases = await getAllDatabases();
-    let newDb = new DB(databases[dbNamePos]);
-
-    await newDb.init();
+    await newDb.init('data', dbName);
 
     let dbDesc = newDb.showAllTableNames();
-
+    
     if (currentDb instanceof DB) {
-        currentDb.init();
+        currentDb.init('data', currentDb.name);
     }
 
     return dbDesc.length > 0 ? dbDesc : [['EXCEPTION ENCOUNTER'], ['DATABASE "' + dbName + '" HAS NO TABLES!']]
@@ -1148,23 +1139,9 @@ export async function describeDatabase(currentDb, dbName) {
  * @returns {string} The folder path of all databases.
  * @private
  */
-function getDbFolder() {
+function getFolder(folder) {
     const baseDir = process.platform === 'win32' ? 'C:/nuedb/' : '/var/nuedb/';
-    const dbFolder = path.join(baseDir, 'data');
-
-    return dbFolder;
-}
-
-function getSysFolder() {
-    const baseDir = process.platform === 'win32' ? 'C:/nuedb/' : '/var/nuedb/';
-    const sysFolder = path.join(baseDir, 'system');
-
-    return sysFolder;
-}
-
-function getRmapFolder() {
-    const baseDir = process.platform === 'win32' ? 'C:/nuedb/' : '/var/nuedb/';
-    const dbFolder = path.join(baseDir, 'rmaps');
+    const dbFolder = path.join(baseDir, folder);
 
     return dbFolder;
 }
@@ -1175,81 +1152,24 @@ function getRmapFolder() {
  * @returns {Promise<string>} The file path of the specified database.
  * @private
  */
-async function getDbFilePath(dbName) {
-    const dbFolder = getDbFolder();
+async function getFilePath(name, type) {
+    const folder = getFolder(type);
 
     try {
-        await fs.access(dbFolder);
+        await fs.access(folder);
     } catch (error) {
         if (error.code === 'ENOENT') {
-            await fs.mkdir(dbFolder, { recursive: true });
+            await fs.mkdir(folder, { recursive: true });
         } else {
             throw error;
         }
     }
 
-    return path.join(dbFolder, `${dbName}_db.json`);
+    return path.join(folder, `${name}.json`);
 }
 
-async function getSysFilePath() {
-    const sysFolder = getSysFolder();
-
-    try {
-        await fs.access(sysFolder);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            await fs.mkdir(sysFolder, { recursive: true });
-        } else {
-            throw error;
-        }
-    }
-
-    return path.join(sysFolder, `system.json`);
-}
-
-async function getRmapFilePath(dbName) {
-    const rmapFolder = getRmapFolder();
-
-    try {
-        await fs.access(rmapFolder);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            await fs.mkdir(rmapFolder, { recursive: true });
-        } else {
-            throw error;
-        }
-    }
-
-    return path.join(rmapFolder, `${dbName}.rmap.json`);
-}
-
-/**
- * Gets all database names.
- * @returns {Promise<Array>} An array containing all database names.
- * @private
- */
-async function getAllDatabases() {
-    let files = await fs.readdir(getDbFolder());
-    return files.map(file => file.split('_')[0]);
-}
-
-async function getAllRmaps() {
-    let files = await fs.readdir(getRmapFolder());
-    return files.map(file => file.split('.')[0]);
-}
-
-/**
- * Gets the position of the database in the list of all databases.
- * @param {string} dbName - The name of the database.
- * @returns {Promise<number>} The position of the database in the list of all databases.
- * @private
- */
-async function getDatabasePosition(dbName) {
-    let databases = await getAllDatabases();
-    return treeSearch(databases, dbName);
-}
-
-async function getRmapPosition(dbName) {
-    let rmaps = await getAllRmaps();
-    return treeSearch(rmaps, dbName);
+async function checkFileExists(file) {
+    return await fs.access(file, fs.constants.F_OK)
+        .then(() => true)
+        .catch(() => false)
 }
