@@ -1083,7 +1083,7 @@ export async function describeDatabase(currentDb, dbName) {
 
     let dbDesc = newDb.showAllTableNames();
 
-    if(dbDesc[0][0]==='EXCEPTION ENCOUNTER'){
+    if(dbDesc.length > 0 && dbDesc[0][0]==='EXCEPTION ENCOUNTER'){
         return  [['EXCEPTION ENCOUNTER'], ['DATABASE "' + dbName + '" DOESN\'T EXIST!']]
     }
     
