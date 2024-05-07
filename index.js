@@ -82,7 +82,7 @@ export class DB {
             this.tables = JSON.parse(dbContent);
             this.initialized = true;
         } catch (readError) {
-            console.log(`DATABASE ${dbName} DOESN'T EXIST!`)
+
         }
         return this.initialized;
     }
@@ -100,27 +100,23 @@ export class DB {
     createTable({ tableName = 'table', primaryKey = 'id', columns = [], foreignKeys }) {
 
         if (!this.initialized) {
-            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. NO DATABASE INITIALIZED! ');
             return [['EXCEPTION ENCOUNTER'], ['TABLE CANNOT BE CREATED! NO DATABASE INITIALIZED!']];
         }
 
         let tableExist = this.getOneTable(tableName);
 
         if (tableExist[0][0] !== 'EXCEPTION ENCOUNTER') {
-            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. TABLE NAME "' + tableName + '" IS ALREADY CREATED!');
             return [['EXCEPTION ENCOUNTER'], ['TABLE CANNOT BE CREATED! TABLE NAME "' + tableName + '" ALREADY IN USE!']];
         }
 
         const isKeyWord = treeSearch(this.keywords, tableName);
 
         if (isKeyWord !== -1) {
-            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. TABLE NAME "' + tableName + '" IS A KEYWORD!');
             return [['EXCEPTION ENCOUNTER'], ['TABLE WITH NAME "' + tableName + '" NOT CREATED! TABLE NAME "' + tableName + '" IS A KEYWORD!']];
         }
 
         const isValid = treeSearch(tableName, " ");
         if (isValid !== -1) {
-            console.log('TABLE WITH NAME "' + tableName + '" NOT CREATED. TABLE NAMES CANNOT HAVE WHITESPACES');
             return [['EXCEPTION ENCOUNTER'], ['TABLE WITH NAME "' + tableName + '" NOT CREATED! TABLE NAMES CANNOT HAVE WHITESPACES']];
         }
 
@@ -149,13 +145,11 @@ export class DB {
                 const referenceTableExist = this.getOneTable(referenceTable);
 
                 if (referenceTableExist[0][0] === 'EXCEPTION ENCOUNTER') {
-                    console.log('TABLE WITH NAME "' + tableName + '" CANNOT BE CREATED. REFERENCE TABLE "' + referenceTable + '" DOESN\'T EXIST!');
                     return false;
                 }
 
                 const referenceColumnExist = treeSearch(referenceTableExist[1], referenceColumn)
                 if (referenceColumnExist === -1) {
-                    console.log('TABLE WITH NAME "' + tableName + '" CANNOT BE CREATED. COLUMN "' + referenceColumn + '" DOESN\'T EXIST ON TABLE "' + referenceTable + '"!');
                     return false;
                 }
 
@@ -175,7 +169,6 @@ export class DB {
                     table[1][i + 1] = allcolumns[i];
                 }
             } else {
-                console.log('TABLE WITH NAME "' + tableName + '" CANNOT BE CREATED. DUPLICATED COLUMNS FOUND!');
                 return false;
             }
 
@@ -186,15 +179,12 @@ export class DB {
                     table[1][i + 1] = columns[i];
                 }
             } else {
-                console.log('TABLE WITH NAME "' + tableName + '" CANNOT BE CREATED. DUPLICATED COLUMNS FOUND!');
                 return false;
             }
 
         }
 
         dbMethods.insert(this.tables, table);
-
-        console.log('TABLE WITH NAME "' + tableName + '" CREATED SUCCESSFULY');
 
         this.updateRmap({ name: table[0][0], columns: table[1], references: table[0][1].references });
 
@@ -236,7 +226,6 @@ export class DB {
     */
     dropTable(tableName) {
         if (!this.initialized) {
-            console.log('TABLE WITH NAME "' + tableName + '" COULD NOT BE DROPPED! NO DATABASE INITIALIZED!');
             return false;
         }
 
@@ -247,13 +236,10 @@ export class DB {
         let tableIndex = treeSearch(tableNames, tableName);
 
         if (tableIndex === -1) {
-            console.log('TABLE COULD NOT BE DROPPED! TABLE "' + tableName + '" DOES\'T EXIST!')
             result = false;
         }
 
         result = dbMethods.deleteByIndex(this.tables, tableIndex);
-
-        console.log('TABLE "' + tableName + '" DROPPED SUCCESSFULY');
 
         return result;
 
@@ -268,13 +254,11 @@ export class DB {
     */
     alterTable({ tableName, operation, target, options = { save: false }, elements }) {
         if (!this.initialized) {
-            console.log('ANY TABLES FOUND! NO DATABASE INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ANY TABLES FOUND! NO DATABASE INITIALIZED!']];
         }
 
         let table = this.getOneTable(tableName);
         if (table[0] === 'EXCEPTION ENCOUNTER') {
-            console.log('TABLE COULD NOT BE ALTERED! TABLE "' + tableName + '" DOES\'T EXIST!')
             result = false;
         }
 
@@ -502,13 +486,11 @@ export class DB {
     */
     delete({ tableName, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
         if (!this.initialized) {
-            console.log('ROW OR ROWS CANNOT BE DELETED! NO DATABASE INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! NO DATABASE INITIALIZED!']];
         }
 
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'EXCEPTION ENCOUNTER') {
-            console.log('ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST!');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST!']];
         }
 
@@ -519,7 +501,6 @@ export class DB {
         }
 
         if (columnIndex === -1) {
-            console.log('ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN!');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN!']];
         }
 
@@ -529,15 +510,11 @@ export class DB {
                 dbMethods.deleteByIndex(table, rows[i]);
             }
 
-            console.log(`DELETED ${rows.length} ROW(S) WITH "${condition}" ${operator} "${conditionValue}"`);
-
-            return true;
+            return [['RESULT'][`DELETED ${rows.length} ROW(S) WITH "${condition}" ${operator} "${conditionValue}"`]];
 
         }
 
-        console.log('0 ROWS DELETED');
-
-        return false;
+        return [['RESULT'][`0 ROWS DELETED`]];
 
     }
 
@@ -554,7 +531,6 @@ export class DB {
     */
     update({ tableName, set = [], setValues, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
         if (!this.initialized) {
-            console.log('ROW OR ROWS CANNOT BE UPDATED! NO DATABASE INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! NO DATABASE INITIALIZED!']];
         }
         const table = this.getOneTable(tableName);
@@ -566,12 +542,10 @@ export class DB {
         }
 
         if (columnIndex === undefined || columnIndex === -1) {
-            console.log('ROW OR ROWS CANNOT BE UPDATED! CONDITION "' + condition + '" IS NOT A VALID COLUMN!');
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! CONDITION "' + condition + '" IS NOT A VALID COLUMN!']];
         }
 
         if (rows.length === 0) {
-            console.log('NO ROWS FOUND WITH CONDITION "' + condition + '" ' + operator + ' "' + conditionValue + '"!');
             return [['EXCEPTION ENCOUNTER'], ['NO ROWS FOUND WITH CONDITION "' + condition + '" ' + operator + ' "' + conditionValue + '"!']];
         }
 
@@ -585,7 +559,6 @@ export class DB {
         const setIndexes = set.map(column => {
             const index = columnIndexes[column];
             if (index === undefined) {
-                console.log('ROW OR ROWS CANNOT BE UPDATED! CANNOT SET A VALUE TO COLUMN "' + column + '" BECAUSE IT DOES\'T EXISTS!');
                 setColumnExist = { exist: false, columnName: column }
             }
             return index;
@@ -617,8 +590,7 @@ export class DB {
             updated = totalUpdated > 0;
             finalMsg = updated ? `UPDATED ${totalUpdated} ROW(S) WITH (${JSON.stringify(set)}) VALUES (${JSON.stringify(setValues)})` : '0 ROWS UPDATED';
         }
-        console.log(finalMsg);
-        return updated;
+        return [['RESULT'][finalMsg]];
     }
 
     /**
@@ -637,13 +609,11 @@ export class DB {
     */
     find({ tableName, distinct = false, columns, joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy, asc = true }) {
         if (!this.initialized) {
-            console.log('NO DATABASE INITIALIZED!');
             return [['EXCEPTION ENCOUNTER'], ['NO DATABASE INITIALIZED!']];
         }
 
         let table = this.getOneTable(tableName);
         if (table[0][0] === 'EXCEPTION ENCOUNTER') {
-            console.log('TABLE "' + tableName + '" DOESN\'T EXIST!');
             return [['EXCEPTION ENCOUNTER'], ['TABLE ' + tableName + ' DOESN\'T EXIST!']];
         }
 
@@ -700,7 +670,6 @@ export class DB {
 
             const orderColumnIndex = treeSearch(table[1], orderBy);
             if (orderColumnIndex === -1) {
-                console.log('ORDER COLUMN "' + orderBy + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!');
                 return [['EXCEPTION ENCOUNTER'], ['ORDER COLUMN "' + orderBy + '" DOESN\'T EXIST ON TABLE "' + tableName + '"!']];
             }
 
@@ -763,7 +732,6 @@ export class DB {
             let { referenceTable, firstColumn, secondColumn } = join;
             const joinedTable = dbMethods.deepCopy(this.getOneTable(referenceTable));
             if (joinedTable[0][0] === "EXCEPTION ENCOUNTER") {
-                console.log('TABLE "' + referenceTable + '" DOESN\'T EXIST!');
                 return [['EXCEPTION ENCOUNTER'], ['TABLE ' + referenceTable + ' DOESN\'T EXIST!']];
             }
             if ([...joinedTables][0][0].split("|").includes(referenceTable)) {
@@ -832,7 +800,6 @@ export class DB {
             const columnIndex = treeSearch(table[1], condition);
 
             if (columnIndex === -1) {
-                console.log('CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!');
                 return { columnIndex: undefined, rows: [], success: false, errorMessage: 'CONDITION COLUMN "' + condition + '" DOESN\'T EXIST ON TABLE "' + table[0][0] + '"!' };
             }
 
@@ -1008,7 +975,6 @@ export class DB {
     */
     async save() {
         if (!this.initialized) {
-            console.log('YOU CAN\'T SAVE! NO DATABASE INITIALIZED');
             return [['EXCEPTION ENCOUNTER'], ['YOU CAN\'T SAVE! NO DATABASE INITIALIZED']];
         }
         await fs.writeFile(this.dbFilePath, JSON.stringify(this.tables, null, 0));
@@ -1029,11 +995,9 @@ export async function createDb(dbFolder, dbName) {
     }
     try {
         if (await checkFileExists(dbFilePath)) {
-            console.log(`DATABASE "${dbName}" ALREADY EXIST`);
             return false;
         }
         await fs.writeFile(dbFilePath, '[]');
-        console.log(`DATABASE "${dbName}" CREATED SUCCESSFULY`);
         if (rmapFilePath) {
             await fs.writeFile(rmapFilePath, '[]');
         }
@@ -1055,12 +1019,10 @@ export async function dropDb(dbFolder, dbName) {
     try {
         const dbPath = path.join(getFolder(dbFolder), `/${dbName}.json`);
         await fs.unlink(dbPath);
-        console.log(dbPath)
-        console.log('DATABASE DELETED SUCCESSFULLY');
         return true;
     } catch (err) {
         if (err.code === 'ENOENT') {
-            console.log('DATABASE NOT FOUND');
+            return false;
         } else {
             console.log('ERROR DELETING DATABASE:', err.message);
         }
