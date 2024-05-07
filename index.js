@@ -510,11 +510,11 @@ export class DB {
                 dbMethods.deleteByIndex(table, rows[i]);
             }
 
-            return [['RESULT'][`DELETED ${rows.length} ROW(S) WITH "${condition}" ${operator} "${conditionValue}"`]];
+            return [['RESULT'],[`DELETED ${rows.length} ROW(S) WITH "${condition}" ${operator} "${conditionValue}"`]];
 
         }
 
-        return [['RESULT'][`0 ROWS DELETED`]];
+        return [['RESULT'],[`0 ROWS DELETED`]];
 
     }
 
@@ -590,7 +590,7 @@ export class DB {
             updated = totalUpdated > 0;
             finalMsg = updated ? `UPDATED ${totalUpdated} ROW(S) WITH (${JSON.stringify(set)}) VALUES (${JSON.stringify(setValues)})` : '0 ROWS UPDATED';
         }
-        return [['RESULT'][finalMsg]];
+        return [['RESULT'],[finalMsg]];
     }
 
     /**

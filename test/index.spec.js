@@ -349,13 +349,13 @@ describe("Delete element from table test", () => {
         await testDBInstance.insert({ tableName: "test_table_1", values: ["test_value_1", "test_value_2", "test_value_3"] });
         const tableDelete = await testDBInstance.delete({ tableName: "test_table_1", condition: "id", operator: "=", conditionValue: 0 })
         const deletedElementIndex = testDBInstance.retrieveRowIndexes({table: testDBInstance.getOneTable("test_table_1"), condition: "id", operator: "=", conditionValue: 0}) 
-        expect(tableDelete).toBe(true);
+        expect(tableDelete[0][0]).toEqual('RESULT');
         expect(deletedElementIndex.rows).toEqual([])
         expect(deletedElementIndex.rows).toEqual(expect.not.arrayContaining([0, 1, 2, 3]))
     })
     test("Should not delete on table because the element doesn\'t exist", async () => {
         const tableDelete = await testDBInstance.delete({ tableName: "test_table_1", condition: "id", operator: "=", conditionValue: 1 })
-        expect(tableDelete).toBe(false);
+        expect(tableDelete[0][0]).toEqual('RESULT');
     })
     test("Should not delete on table because a column is invalid", async () => {
         const tableDelete = await testDBInstance.delete({ tableName: "test_table_1", condition: "fake_column", operator: "=", conditionValue: "value" })
@@ -372,7 +372,7 @@ describe("Update element from table test", ()=>{
         await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_1`, `test_value_2`, `test_value_3`] });
         const updateTable = await testDBInstance.update({tableName: "test_table_1", set: ["test_column_1"], setValues: ["new_value"], condition: "id", operator: "=", conditionValue: 0})
         const updatedElementRow = testDBInstance.tables[0][2]
-        expect(updateTable).toBe(true);
+        expect(updateTable[0][0]).toEqual('RESULT');
         expect(updatedElementRow).toEqual(expect.arrayContaining(["new_value"]))
     })
     test("Should not update one column value on table because the table doesn\'t exist", async ()=>{
