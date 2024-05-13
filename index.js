@@ -1018,7 +1018,7 @@ export async function createDb(dbFolder, dbName) {
 export async function dropDb(dbFolder, dbName) {
     try {
         const dbPath = path.join(getFolder(dbFolder), `/${dbName}.json`);
-        await fs.unlink(dbPath);
+        await fs.rm(dbPath);
         return true;
     } catch (err) {
         if (err.code === 'ENOENT') {
