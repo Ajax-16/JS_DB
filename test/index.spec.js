@@ -152,11 +152,10 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: undefined, operator: undefined, conditionValue: undefined })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions:undefined })
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.arrayContaining([2, 3, 4, 5, 6]));
         expect(success).toBe(true);
-        expect(columnIndex).toBeFalsy();
         expect(errorMessage).toBeFalsy();
 
     })
@@ -166,14 +165,13 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "test_column_1", operator: "=", conditionValue: "test_value_1" })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "test_column_1", operator: "=", conditionValue: "test_value_1"}] })
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.arrayContaining([3]));
         expect(rows).toEqual(expect.not.arrayContaining([3, 4]));
         expect(rows).toEqual(expect.not.arrayContaining([2, 6]));
         expect(rows).toEqual(expect.not.arrayContaining([2, 3]));
         expect(success).toBe(true);
-        expect(columnIndex).toBe(1);
         expect(errorMessage).toBeFalsy();
 
     })
@@ -183,11 +181,10 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "id", operator: "!=", conditionValue: 2 })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "id", operator: "!=", conditionValue: 2} ]})
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.arrayContaining([2, 3, 5, 6]));
         expect(success).toBe(true);
-        expect(columnIndex).toBe(0);
         expect(errorMessage).toBeFalsy();
 
     })
@@ -197,12 +194,11 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "id", operator: ">", conditionValue: 0 })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "id", operator: ">", conditionValue: 0}] })
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.arrayContaining([3, 4, 5, 6]));
         expect(rows).toEqual(expect.not.arrayContaining([2]));
         expect(success).toBe(true);
-        expect(columnIndex).toBe(0);
         expect(errorMessage).toBeFalsy();
 
     })
@@ -212,11 +208,10 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "id", operator: ">=", conditionValue: 0 })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "id", operator: ">=", conditionValue: 0}] })
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.arrayContaining([2, 3, 4, 5, 6]));
         expect(success).toBe(true);
-        expect(columnIndex).toBe(0);
         expect(errorMessage).toBeFalsy();
 
     })
@@ -226,12 +221,11 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "id", operator: "<", conditionValue: 4 })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{ condition: "id", operator: "<", conditionValue: 4}] })
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.arrayContaining([2, 3, 4, 5]));
         expect(rows).toEqual(expect.not.arrayContaining([6]));
         expect(success).toBe(true);
-        expect(columnIndex).toBe(0);
         expect(errorMessage).toBeFalsy();
 
     })
@@ -241,11 +235,10 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "id", operator: "<=", conditionValue: 4 })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "id", operator: "<=", conditionValue: 4}] })
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.arrayContaining([2, 3, 4, 5, 6]));
         expect(success).toBe(true);
-        expect(columnIndex).toBe(0);
         expect(errorMessage).toBeFalsy();
 
     })
@@ -255,11 +248,10 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "test_column_1", operator: "LIKE", conditionValue: 'test_value_%' })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "test_column_1", operator: "LIKE", conditionValue: 'test_value_%'}] })
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.arrayContaining([2, 3, 4, 5, 6]));
         expect(success).toBe(true);
-        expect(columnIndex).toBe(1);
         expect(errorMessage).toBeFalsy();
 
     })
@@ -269,11 +261,10 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "test_column_1", operator: "NOT LIKE", conditionValue: 'test_value_%' })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "test_column_1", operator: "NOT LIKE", conditionValue: 'test_value_%'}] })
         expect(rows).toEqual([]);
         expect(rows).toEqual(expect.not.arrayContaining([0, 1, 2, 3, 4, 5, 6]));
         expect(success).toBe(true);
-        expect(columnIndex).toBe(1);
         expect(errorMessage).toBeFalsy();
 
     })
@@ -283,12 +274,11 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "id", operator: "IN", conditionValue: [0, 2, 4] })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "id", operator: "IN", conditionValue: [0, 2, 4]}] })
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.not.arrayContaining([3, 5]));
         expect(rows).toEqual(expect.arrayContaining([2, 4, 6]));
         expect(success).toBe(true);
-        expect(columnIndex).toBe(0);
         expect(errorMessage).toBeFalsy();
 
     })
@@ -298,12 +288,11 @@ describe("retrieve row indexes successfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "id", operator: "NOT IN", conditionValue: [0, 2, 4] })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "id", operator: "NOT IN", conditionValue: [0, 2, 4]}] })
         expect(rows).toEqual(expect.not.arrayContaining([0, 1]));
         expect(rows).toEqual(expect.not.arrayContaining([2, 4, 6]));
         expect(rows).toEqual(expect.arrayContaining([3, 5]));
         expect(success).toBe(true);
-        expect(columnIndex).toBe(0);
         expect(errorMessage).toBeFalsy();
 
     })
@@ -317,11 +306,10 @@ describe("retrive row indexes unsuccessfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "fake_condition_column", operator: "=", conditionValue: "fake_value" })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "fake_condition_column", operator: "=", conditionValue: "fake_value"}] })
         expect(rows).toEqual([]);
         expect(rows).toEqual(expect.not.arrayContaining([0, 1, 2, 3, 4, 5, 6]));
         expect(success).toBe(false);
-        expect(columnIndex).toBeFalsy();
         expect(errorMessage).toEqual(expect.stringContaining("CONDITION COLUMN"));
         expect(errorMessage).toEqual(expect.stringContaining("DOESN\'T EXIST ON TABLE"));
 
@@ -332,11 +320,10 @@ describe("retrive row indexes unsuccessfully test", () => {
             await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_${i}`, `test_value_${i + 1}`, `test_value_${i + 2}`] });
         }
 
-        const { columnIndex, rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), condition: "fake_condition_column", operator: "=", conditionValue: "fake_value" })
+        const { rows, success, errorMessage } = testDBInstance.retrieveRowIndexes({ table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "fake_condition_column", operator: "=", conditionValue: "fake_value"}] })
         expect(rows).toEqual([]);
         expect(rows).toEqual(expect.not.arrayContaining([0, 1, 2, 3, 4, 5, 6]));
         expect(success).toBe(false);
-        expect(columnIndex).toBeFalsy();
         expect(errorMessage).toEqual(expect.stringContaining("CONDITION COLUMN"));
         expect(errorMessage).toEqual(expect.stringContaining("DOESN\'T EXIST ON TABLE"));
         
@@ -348,21 +335,21 @@ describe("Delete element from table test", () => {
         // test element
         await testDBInstance.insert({ tableName: "test_table_1", values: ["test_value_1", "test_value_2", "test_value_3"] });
         const tableDelete = await testDBInstance.delete({ tableName: "test_table_1", condition: "id", operator: "=", conditionValue: 0 })
-        const deletedElementIndex = testDBInstance.retrieveRowIndexes({table: testDBInstance.getOneTable("test_table_1"), condition: "id", operator: "=", conditionValue: 0}) 
+        const deletedElementIndex = testDBInstance.retrieveRowIndexes({table: testDBInstance.getOneTable("test_table_1"), conditions: [{condition: "id", operator: "=", conditionValue: 0}]}) 
         expect(tableDelete[0][0]).toEqual('RESULT');
         expect(deletedElementIndex.rows).toEqual([])
         expect(deletedElementIndex.rows).toEqual(expect.not.arrayContaining([0, 1, 2, 3]))
     })
     test("Should not delete on table because the element doesn\'t exist", async () => {
-        const tableDelete = await testDBInstance.delete({ tableName: "test_table_1", condition: "id", operator: "=", conditionValue: 1 })
+        const tableDelete = await testDBInstance.delete({ tableName: "test_table_1", conditions: [{condition: "id", operator: "=", conditionValue: 1}] })
         expect(tableDelete[0][0]).toEqual('RESULT');
     })
     test("Should not delete on table because a column is invalid", async () => {
-        const tableDelete = await testDBInstance.delete({ tableName: "test_table_1", condition: "fake_column", operator: "=", conditionValue: "value" })
+        const tableDelete = await testDBInstance.delete({ tableName: "test_table_1", conditions: [{condition: "fake_column", operator: "=", conditionValue: "value"}] })
         expect(tableDelete[0][0]).toEqual("EXCEPTION ENCOUNTER");
     })
     test("Should not delete on table because the table doesn\'t exist", async () => {
-        const tableDelete = await testDBInstance.delete({ tableName: "fake_table", condition: "id", operator: "=", conditionValue: 0 })
+        const tableDelete = await testDBInstance.delete({ tableName: "fake_table", conditions: [{condition: "id", operator: "=", conditionValue: 0}] })
         expect(tableDelete[0][0]).toEqual("EXCEPTION ENCOUNTER");
     })
 })
@@ -370,19 +357,19 @@ describe("Delete element from table test", () => {
 describe("Update element from table test", ()=>{
     test("Should update one column value on table", async ()=>{
         await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_1`, `test_value_2`, `test_value_3`] });
-        const updateTable = await testDBInstance.update({tableName: "test_table_1", set: ["test_column_1"], setValues: ["new_value"], condition: "id", operator: "=", conditionValue: 0})
+        const updateTable = await testDBInstance.update({tableName: "test_table_1", set: ["test_column_1"], setValues: ["new_value"], conditions: [{condition: "id", operator: "=", conditionValue: 0}]})
         const updatedElementRow = testDBInstance.tables[0][2]
         expect(updateTable[0][0]).toEqual('RESULT');
         expect(updatedElementRow).toEqual(expect.arrayContaining(["new_value"]))
     })
     test("Should not update one column value on table because the table doesn\'t exist", async ()=>{
         await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_1`, `test_value_2`, `test_value_3`] });
-        const updateTable = await testDBInstance.update({tableName: "fake_table", set: ["test_column_1"], setValues: ["new_value"], condition: "id", operator: "=", conditionValue: 0})
+        const updateTable = await testDBInstance.update({tableName: "fake_table", set: ["test_column_1"], setValues: ["new_value"], conditions: [{condition: "id", operator: "=", conditionValue: 0}]})
         expect(updateTable[0][0]).toEqual("EXCEPTION ENCOUNTER");
     })
     test("Should not update one column value on table because the used set column or columns are not valid", async ()=>{
         await testDBInstance.insert({ tableName: "test_table_1", values: [`test_value_1`, `test_value_2`, `test_value_3`] });
-        const updateTable = await testDBInstance.update({tableName: "test_table_1", set: ["fake_column"], setValues: ["new_value"], condition: "id", operator: "=", conditionValue: 0})
+        const updateTable = await testDBInstance.update({tableName: "test_table_1", set: ["fake_column"], setValues: ["new_value"], conditions: [{condition: "id", operator: "=", conditionValue: 0}]})
         expect(updateTable[0][0]).toEqual("EXCEPTION ENCOUNTER");
     })
 })

@@ -805,7 +805,9 @@ export class DB {
             }
 
             switch (true) {
-                case /^>/.test(operator):
+               
+                case /^>$/.test(operator):
+                    console.log(operator)
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value > Math.max(...conditionValue)) {
@@ -820,7 +822,7 @@ export class DB {
                         }
                     }
                     break;
-                case /^</.test(operator):
+                case /^<$/.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value < Math.min(...conditionValue)) {
@@ -836,7 +838,7 @@ export class DB {
                     }
                     break;
                 // mayor o igual
-                case /^>=/.test(operator):
+                case /^>=$/.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value >= Math.max(...conditionValue)) {
@@ -852,7 +854,7 @@ export class DB {
                     }
                     break;
                 // menor o igual
-                case /^<=/.test(operator):
+                case /^<=$/.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value <= Math.min(...conditionValue)) {
@@ -867,7 +869,7 @@ export class DB {
                         }
                     }
                     break;
-                case /^IN/ui.test(operator):
+                case /^IN$/ui.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (conditionValue.includes(value)) {
@@ -978,7 +980,7 @@ export class DB {
                         }
                     }
                     break;
-                case /^!=/.test(operator):
+                case /^!=$/.test(operator):
                     
                     for (let [value, indices] of indexMap) {
                         if (value !== conditionValue) {
@@ -986,7 +988,7 @@ export class DB {
                         }
                     }
                     break;
-                case /^=/.test(operator):
+                case /^=$/.test(operator):
                 default:
                     if (!indexMap.has(conditionValue)) {
                         resultRows = [];
