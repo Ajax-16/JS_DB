@@ -484,7 +484,7 @@ export class DB {
     * @param {any} conditionValue - The value used for the condition.
     * @returns {Promise<boolean>} A boolean indicating whether the delete operation was successful or not.
     */
-    delete({ tableName, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
+    delete({ tableName, conditions }) {
         if (!this.initialized) {
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! NO DATABASE INITIALIZED!']];
         }
@@ -494,27 +494,25 @@ export class DB {
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! TABLE "' + tableName + '" DOESN\'T EXIST!']];
         }
 
-        const { columnIndex, rows, success, errorMessage } = this.retrieveRowIndexes({ table, condition, operator, conditionValue });
+        let { rows, success, errorMessage } = this.retrieveRowIndexes({ table, conditions });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
         }
 
-        if (columnIndex === -1) {
-            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE DELETED! CONDITION "' + condition + '" IS NOT A VALID COLUMN!']];
-        }
-
         if (rows.length > 0) {
-
-            for (let i = rows.length - 1; i >= 0; i--) {
-                dbMethods.deleteByIndex(table, rows[i]);
+            let deletedRowsCount = 0;
+            for (let i = table.length - 1; i >= 2; i--) {
+                if (treeSearch(rows, i) !== -1) {
+                    dbMethods.deleteByIndex(table, i);
+                    deletedRowsCount++;
+                }
             }
 
-            return [['RESULT'],[`DELETED ${rows.length} ROW(S) WITH "${condition}" ${operator} "${conditionValue}"`]];
-
+            return [['RESULT'], [`DELETED ${deletedRowsCount} ROW(S)`]];
         }
 
-        return [['RESULT'],[`0 ROWS DELETED`]];
+        return [['RESULT'], [`0 ROWS DELETED`]];
 
     }
 
@@ -529,24 +527,20 @@ export class DB {
     * @param {any} conditionValue - The value used for the condition.
     * @returns {Promise<boolean>} A boolean indicating whether the update operation was successful or not.
     */
-    update({ tableName, set = [], setValues, condition = this.getOneTable(tableName)[1][0], operator = '=', conditionValue }) {
+    update({ tableName, set = [], setValues, conditions }) {
         if (!this.initialized) {
             return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! NO DATABASE INITIALIZED!']];
         }
         const table = this.getOneTable(tableName);
 
-        const { columnIndex, rows, success, errorMessage } = this.retrieveRowIndexes({ table, condition, operator, conditionValue });
+        const { rows, success, errorMessage } = this.retrieveRowIndexes({ table, conditions });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
         }
 
-        if (columnIndex === undefined || columnIndex === -1) {
-            return [['EXCEPTION ENCOUNTER'], ['ROW OR ROWS CANNOT BE UPDATED! CONDITION "' + condition + '" IS NOT A VALID COLUMN!']];
-        }
-
         if (rows.length === 0) {
-            return [['EXCEPTION ENCOUNTER'], ['NO ROWS FOUND WITH CONDITION "' + condition + '" ' + operator + ' "' + conditionValue + '"!']];
+            return [['RESULT'], ['0 ROWS UPDATED']];
         }
 
         const columnIndexes = {};
@@ -588,9 +582,9 @@ export class DB {
                 }
             }
             updated = totalUpdated > 0;
-            finalMsg = updated ? `UPDATED ${totalUpdated} ROW(S) WITH (${JSON.stringify(set)}) VALUES (${JSON.stringify(setValues)})` : '0 ROWS UPDATED';
+            finalMsg = updated ? `UPDATED ${totalUpdated} ROW(S)` : '0 ROWS UPDATED';
         }
-        return [['RESULT'],[finalMsg]];
+        return [['RESULT'], [finalMsg]];
     }
 
     /**
@@ -607,7 +601,7 @@ export class DB {
     * @param {number} limit - The maximum number of rows to retrieve.
     * @returns {Promise<Array<Array<any>>>} An array containing the retrieved rows, or an array indicating an exception encounter if no rows are found.
     */
-    find({ tableName, distinct = false, columns, joins, condition, operator = '=', conditionValue, offset = 0, limit, orderBy, asc = true }) {
+    find({ tableName, distinct = false, columns, joins, conditions, offset = 0, limit, orderBy, asc = true }) {
         if (!this.initialized) {
             return [['EXCEPTION ENCOUNTER'], ['NO DATABASE INITIALIZED!']];
         }
@@ -638,7 +632,7 @@ export class DB {
             }
         }
 
-        let { rows, success, errorMessage } = this.retrieveRowIndexes({ table, condition, operator, conditionValue });
+        let { rows, success, errorMessage } = this.retrieveRowIndexes({ table, conditions });
 
         if (!success) {
             return [['EXCEPTION ENCOUNTER'], [errorMessage]];
@@ -776,26 +770,23 @@ export class DB {
      * @param {any} conditionValue - The value used for the condition.
      * @returns {Promise<{ columnIndex: number, rows: Array<number> }>} An object with the column index and the rows that meet the condition.
      */
-    retrieveRowIndexes({ table, condition, operator, conditionValue }) {
-
+    retrieveRowIndexes({ table, conditions }) {
         let rows = [];
-
         let escapedPattern, regexPattern, regex;
-
-        if (condition === undefined) {
-            condition = table[1][0];
-        }
-
-        if (conditionValue === undefined) {
-
-            // Obtiene todas las filas de la tabla sin filtrar (FIND "columnas" IN "tabla")
+        if (!conditions || conditions.length === 0) {
+            // Si no se proporcionan condiciones, devuelve todas las filas
             for (let i = 2; i < table.length; i++) {
                 rows.push(i);
             }
-
             return { rows, success: true };
+        }
 
-        } else {
+        // Realiza la evaluación de las condiciones
+        for (let conditionObj of conditions) {
+            let { condition, operator, conditionValue, logicalOperator } = conditionObj;
+
+            // Realiza la lógica de evaluación de cada condición
+            let resultRows = [];
 
             const columnIndex = treeSearch(table[1], condition);
 
@@ -813,158 +804,216 @@ export class DB {
                 indexMap.get(value).push(i);
             }
 
-            switch (operator.toUpperCase()) {
-                case '>':
+            switch (true) {
+                case /^>/.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value > Math.max(...conditionValue)) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     } else {
                         for (let [value, indices] of indexMap) {
                             if (value > conditionValue) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     }
                     break;
-                case '<':
+                case /^</.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value < Math.min(...conditionValue)) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     } else {
                         for (let [value, indices] of indexMap) {
                             if (value < conditionValue) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     }
                     break;
-                case '>=':
+                // mayor o igual
+                case /^>=/.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value >= Math.max(...conditionValue)) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     } else {
                         for (let [value, indices] of indexMap) {
                             if (value >= conditionValue) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     }
                     break;
-                case '<=':
+                // menor o igual
+                case /^<=/.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value <= Math.min(...conditionValue)) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     } else {
                         for (let [value, indices] of indexMap) {
                             if (value <= conditionValue) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     }
                     break;
-                case 'IN':
+                case /^IN/ui.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (conditionValue.includes(value)) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     } else {
                         if (!indexMap.has(conditionValue)) {
-                            rows = [];
+                            resultRows = [];
                         } else {
-                            rows = indexMap.get(conditionValue) || [];
+                            resultRows = indexMap.get(conditionValue) || [];
                         }
                     }
                     break;
-                case 'NOT IN':
+                case /^NOT\s+IN$/ui.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (!conditionValue.includes(value)) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     } else {
                         for (let [value, indices] of indexMap) {
                             if (value !== conditionValue) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                     }
                     break;
-                case 'LIKE':
+                case /^LIKE$/ui.test(operator):
                     if (conditionValue === null || !isNaN(conditionValue)) {
                         if (!indexMap.has(conditionValue)) {
-                            rows = [];
+                            resultRows = [];
                         } else {
-                            rows = indexMap.get(conditionValue) || [];
+                            resultRows = indexMap.get(conditionValue) || [];
                         }
                         break;
                     }
 
                     escapedPattern = conditionValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
                     regexPattern = escapedPattern.replace(/%/g, '.*');
+                    regex = new RegExp(`^${regexPattern}$`, 'u');
 
+                    for (let [value, indices] of indexMap) {
+                        if (regex.test(value)) {
+                            resultRows = resultRows.concat(indices);
+                        }
+                    }
+                    break;
+                case /^ILIKE$/ui.test(operator):
+                    
+                    if (conditionValue === null || !isNaN(conditionValue)) {
+                        if (!indexMap.has(conditionValue)) {
+                            resultRows = [];
+                        } else {
+                            resultRows = indexMap.get(conditionValue) || [];
+                        }
+                        break;
+                    }
+
+                    escapedPattern = conditionValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    regexPattern = escapedPattern.replace(/%/g, '.*');
                     regex = new RegExp(`^${regexPattern}$`, 'ui');
 
                     for (let [value, indices] of indexMap) {
                         if (regex.test(value)) {
-                            rows = rows.concat(indices);
+                            resultRows = resultRows.concat(indices);
                         }
                     }
                     break;
-                case 'NOT LIKE':
+                case /^NOT\s+LIKE$/ui.test(operator):
                     if (conditionValue === null || !isNaN(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value !== conditionValue) {
-                                rows = rows.concat(indices);
+                                resultRows = resultRows.concat(indices);
                             }
                         }
                         break;
                     }
                     escapedPattern = conditionValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
                     regexPattern = escapedPattern.replace(/%/g, '.*');
+                    regex = new RegExp(`^${regexPattern}$`, 'u');
 
+                    for (let [value, indices] of indexMap) {
+                        if (!regex.test(value)) {
+                            resultRows = resultRows.concat(indices);
+                        }
+                    }
+                    break;
+                case /^NOT\s+ILIKE$/ui.test(operator):
+                    
+                    if (conditionValue === null || !isNaN(conditionValue)) {
+                        if (!indexMap.has(conditionValue)) {
+                            resultRows = [];
+                        } else {
+                            resultRows = indexMap.get(conditionValue) || [];
+                        }
+                        break;
+                    }
+
+                    escapedPattern = conditionValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    regexPattern = escapedPattern.replace(/%/g, '.*');
                     regex = new RegExp(`^${regexPattern}$`, 'ui');
 
                     for (let [value, indices] of indexMap) {
                         if (!regex.test(value)) {
-                            rows = rows.concat(indices);
+                            resultRows = resultRows.concat(indices);
                         }
                     }
                     break;
-                case '!=':
+                case /^!=/.test(operator):
+                    
                     for (let [value, indices] of indexMap) {
                         if (value !== conditionValue) {
-                            rows = rows.concat(indices);
+                            resultRows = resultRows.concat(indices);
                         }
                     }
                     break;
-                case '=':
+                case /^=/.test(operator):
                 default:
                     if (!indexMap.has(conditionValue)) {
-                        rows = [];
+                        resultRows = [];
                     } else {
-                        rows = indexMap.get(conditionValue) || [];
+                        resultRows = indexMap.get(conditionValue) || [];
                     }
                     break;
             }
-            return { columnIndex, rows, success: true };
+
+            // Aplicar operador lógico al resultado actual y el acumulado
+            if (rows.length === 0 || !logicalOperator) {
+                rows = resultRows;
+            } else {
+                switch (logicalOperator.toUpperCase()) {
+                    case 'AND':
+                        rows = rows.filter(row => resultRows.includes(row));
+                        break;
+                    case 'OR':
+                        rows = [...new Set([...rows, ...resultRows])]; // Unión de conjuntos
+                        break;
+                    default:
+                        return { rows: [], success: false, errorMessage: 'Operador lógico no válido: ' + logicalOperator };
+                }
+            }
         }
+
+        return { rows, success: true };
     }
 
     /**
@@ -1045,10 +1094,10 @@ export async function describeDatabase(currentDb, dbName) {
 
     let dbDesc = newDb.showAllTableNames();
 
-    if(dbDesc.length > 0 && dbDesc[0][0]==='EXCEPTION ENCOUNTER'){
-        return  [['EXCEPTION ENCOUNTER'], ['DATABASE "' + dbName + '" DOESN\'T EXIST!']]
+    if (dbDesc.length > 0 && dbDesc[0][0] === 'EXCEPTION ENCOUNTER') {
+        return [['EXCEPTION ENCOUNTER'], ['DATABASE "' + dbName + '" DOESN\'T EXIST!']]
     }
-    
+
     if (currentDb instanceof DB) {
         currentDb.init('data', currentDb.name);
     }
