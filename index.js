@@ -788,6 +788,10 @@ export class DB {
             // Realiza la lógica de evaluación de cada condición
             let resultRows = [];
 
+            if(!condition) {
+                condition = table[1][0];
+            }
+
             const columnIndex = treeSearch(table[1], condition);
 
             if (columnIndex === -1) {
