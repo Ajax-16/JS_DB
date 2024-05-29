@@ -472,7 +472,7 @@ export class DB {
         dbMethods.insert(table, row);
         table[0][1].elements++; // Actualiza el contador de elementos en los encabezados de la tabla
 
-        return true;
+        return (table[0][1].elements) - 1; // Devuelve el id de asignación
 
     }
     /**
@@ -811,7 +811,6 @@ export class DB {
             switch (true) {
                
                 case /^>$/.test(operator):
-                    console.log(operator)
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
                             if (value > Math.max(...conditionValue)) {
