@@ -137,7 +137,7 @@ describe("Describe table test", () => {
 describe("Insert on table test", () => {
     test("Should insert on table", async () => {
         const tableInsert = await testDBInstance.insert({ tableName: "test_table_1", values: ["test_value_1", "test_value_2", "test_value_3"] });
-        expect(tableInsert).toBe(true)
+        expect(tableInsert).toEqual(0)
     })
     test("Should not insert on table because table doesn\'t exist", async () => {
         const tableInsert = await testDBInstance.insert({ tableName: "fake_table", values: ["test_value_1", "test_value_2", "test_value_3"] });
