@@ -410,6 +410,15 @@ export class DB {
         return tableNames;
     }
 
+    getNextTableIndex(tableName) {
+        const tableExist = this.getOneTable(tableName);
+        if(tableExist[0][0]==='EXCEPTION ENCOUNTER') {
+            return -1;
+        }else{
+            return tableExist[0][1].elements;
+        }
+    }
+
     /**
     * @method describeOneTable
     * @description Retrieves information about a specific table.
