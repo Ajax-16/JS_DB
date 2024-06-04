@@ -412,9 +412,9 @@ export class DB {
 
     getNextTableIndex(tableName) {
         const tableExist = this.getOneTable(tableName);
-        if(tableExist[0][0]==='EXCEPTION ENCOUNTER') {
+        if (tableExist[0][0] === 'EXCEPTION ENCOUNTER') {
             return -1;
-        }else{
+        } else {
             return tableExist[0][1].elements;
         }
     }
@@ -781,6 +781,7 @@ export class DB {
      */
     retrieveRowIndexes({ table, conditions }) {
         let rows = [];
+        let finalResultRows = []
         let escapedPattern, regexPattern, regex;
         if (!conditions || conditions.length === 0) {
             // Si no se proporcionan condiciones, devuelve todas las filas
@@ -797,7 +798,7 @@ export class DB {
             // Realiza la lógica de evaluación de cada condición
             let resultRows = [];
 
-            if(!condition) {
+            if (!condition) {
                 condition = table[1][0];
             }
 
@@ -818,7 +819,7 @@ export class DB {
             }
 
             switch (true) {
-               
+
                 case /^>$/.test(operator):
                     if (Array.isArray(conditionValue)) {
                         for (let [value, indices] of indexMap) {
@@ -932,7 +933,7 @@ export class DB {
                     }
                     break;
                 case /^ILIKE$/ui.test(operator):
-                    
+
                     if (conditionValue === null || !isNaN(conditionValue)) {
                         if (!indexMap.has(conditionValue)) {
                             resultRows = [];
@@ -972,7 +973,7 @@ export class DB {
                     }
                     break;
                 case /^NOT\s+ILIKE$/ui.test(operator):
-                    
+
                     if (conditionValue === null || !isNaN(conditionValue)) {
                         if (!indexMap.has(conditionValue)) {
                             resultRows = [];
@@ -993,7 +994,7 @@ export class DB {
                     }
                     break;
                 case /^!=$/.test(operator):
-                    
+
                     for (let [value, indices] of indexMap) {
                         if (value !== conditionValue) {
                             resultRows = resultRows.concat(indices);
@@ -1009,22 +1010,24 @@ export class DB {
                     }
                     break;
             }
-
             // Aplicar operador lógico al resultado actual y el acumulado
-            if (rows.length === 0 || !logicalOperator) {
-                rows = resultRows;
-            } else {
+            
+            finalResultRows.push(resultRows)
+            if(logicalOperator) {
                 switch (logicalOperator.toUpperCase()) {
                     case 'AND':
-                        rows = rows.filter(row => resultRows.includes(row));
+                        rows = finalResultRows.reduce((a, b) => a.filter(c => b.includes(c)));
                         break;
                     case 'OR':
-                        rows = [...new Set([...rows, ...resultRows])]; // Unión de conjuntos
+                        rows = [...new Set([...rows, ...finalResultRows.flat()])]; // Unión de conjuntos
                         break;
                     default:
                         return { rows: [], success: false, errorMessage: 'Operador lógico no válido: ' + logicalOperator };
                 }
+            }else {
+                rows = finalResultRows.reduce((a, b) => a.filter(c => b.includes(c)));
             }
+
         }
 
         return { rows, success: true };
