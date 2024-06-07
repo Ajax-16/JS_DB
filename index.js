@@ -2,6 +2,7 @@ import dbMethods from './algorithms/array_methods.js';
 import { treeSearch } from './algorithms/tree_search.js';
 import { Cache } from './utils/cache.js';
 import { promises as fs } from 'fs';
+import fse from 'fs-extra'
 import path from 'path';
 
 /**
@@ -1081,10 +1082,10 @@ export async function createDb(dbFolder, dbName) {
  * @param {string} dbName - The name of the database to delete.
  * @returns {Promise<boolean>} True if the database was successfully deleted; otherwise, it returns false.
  */
-export async function dropDb(dbFolder, dbName) {
+export function dropDb(dbFolder, dbName) {
     try {
         const dbPath = path.join(getFolder(dbFolder), `/${dbName}.json`);
-        await fs.rm(dbPath);
+        fse.removeSync(dbPath)
         return true;
     } catch (err) {
         if (err.code === 'ENOENT') {
