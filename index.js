@@ -1,6 +1,5 @@
 import dbMethods from './algorithms/array_methods.js';
 import { treeSearch } from './algorithms/tree_search.js';
-import { Cache } from './utils/cache.js';
 import { promises as fs } from 'fs';
 import fse from 'fs-extra'
 import path from 'path';
@@ -16,14 +15,6 @@ export class DB {
     */
     tables = [];
     /**
-    * @property {Array} sysTables - An array to store tables in the system database.
-    */
-    sysTables = [];
-    /**
-    * @property {Array} rmap - An array to store the database structure.
-    */
-    rmap = [];
-    /**
     * @property {string} name - The name of the database.
     */
     name = 'db';
@@ -32,35 +23,19 @@ export class DB {
     */
     dbFilePath = '';
     /**
-    * @property {string} sysFilePath - The file path to the system database.
-    */
-    sysFilePath = '';
-    /**
-    * @property {string} rmapFilePath - The file path to the current database rmap.
-    */
-    rmapFilePath = '';
-    /**
     * @property {Array} keywords - An array of keywords used for checking table names.
     */
     keywords = ['EXCEPTION ENCOUNTER']
-
     /**
     * @property {boolean} initialized - Indicates whether the database has been initialized.
     */
     initialized = false;
 
     /**
-    * @property {Cache}
-    */
-    cache;
-
-    /**
      * Creates an instance of DB.
      * @constructor
-     * @param {number} [cacheBufferSize=65536] - The size of the predefined cache buffer.
      */
-    constructor(cacheBufferSize = 65536) {
-        this.cache = new Cache(cacheBufferSize);
+    constructor() {
         fs.mkdir(getFolder('data'), { recursive: true });
     }
 
@@ -73,11 +48,6 @@ export class DB {
     async init(dbFolder, dbName) {
         try {
             this.dbFilePath = await getFilePath(dbName, dbFolder);
-            if (dbFolder === 'data') {
-                this.rmapFilePath = await getFilePath(dbName + ".rmap", 'rmaps');
-                const rmapContent = await fs.readFile(this.rmapFilePath, 'utf8');
-                this.rmap = JSON.parse(rmapContent);
-            }
             this.name = dbName;
             const dbContent = await fs.readFile(this.dbFilePath, 'utf8');
             this.tables = JSON.parse(dbContent);
@@ -187,36 +157,8 @@ export class DB {
 
         dbMethods.insert(this.tables, table);
 
-        this.updateRmap({ name: table[0][0], columns: table[1], references: table[0][1].references });
-
         return true;
 
-    }
-
-    updateRmap(newTable, levels = this.rmap) {
-
-        const newTableToAdd = {
-            name: newTable.name,
-            columns: newTable.columns,
-            contains: []
-        }
-
-        if (newTable.references) {
-            for (const reference of newTable.references) {
-                for (const level of levels) {
-                    if (level.contains) {
-                        this.updateRmap(newTable, level.contains);
-                    }
-                }
-                for (const level of levels) {
-                    if (level.name === reference.referenceTable) {
-                        level.contains.push(newTableToAdd)
-                    }
-                }
-            }
-        } else {
-            levels.push(newTableToAdd)
-        }
     }
 
     /**
@@ -285,68 +227,41 @@ export class DB {
                             } else {
                                 console.log('column already exists');
                             }
-
                         })
-
                         break;
-
                     case 'REFERENCE':
 
-
-
                         break;
-
                 }
-
                 break;
-
             case 'DROP':
-
                 switch (target) {
-
                     case 'COLUMN':
-
-
 
                         break;
 
                     case 'REFERENCE':
 
-
-
                         break;
-
                 }
 
                 break;
-
             case 'RENAME':
-
                 switch (target) {
-
                     case 'COLUMN':
-
-
 
                         break;
 
                     case 'REFERENCE':
 
-
-
                         break;
-
                 }
-
                 break;
 
             default:
-
                 console.log('UNKNOWN ALTERING OPERATION!')
                 return false;
-
         }
-
     }
 
     /**
@@ -474,7 +389,7 @@ export class DB {
             let columnName = columnNames[i];
             let columnIndex = columns.indexOf(columnName);
             if (columnIndex !== -1) {
-                values[columnIndex] === undefined ? values[columnIndex] = null : values[columnIndex] = values[columnIndex];
+                values[columnIndex] === undefined ? values[columnIndex] = null : values[columnIndex];
                 row[i] = values[columnIndex]; // Asigna el valor correspondiente a la columna
             }
         }
@@ -1048,26 +963,15 @@ export class DB {
         return true;
     }
 
-    async rmapSave() {
-        await fs.writeFile(this.rmapFilePath, JSON.stringify(this.rmap, null, 0));
-    }
-
 }
 
 export async function createDb(dbFolder, dbName) {
-    let rmapFilePath;
     const dbFilePath = await getFilePath(dbName, dbFolder);
-    if (dbFolder === 'data') {
-        rmapFilePath = await getFilePath(dbName + ".rmap", 'rmaps');
-    }
     try {
         if (await checkFileExists(dbFilePath)) {
             return false;
         }
         await fs.writeFile(dbFilePath, '[]');
-        if (rmapFilePath) {
-            await fs.writeFile(rmapFilePath, '[]');
-        }
         return true;
     } catch (writeError) {
         console.error('ERROR READING DATABASE: ', writeError);
