@@ -25,6 +25,9 @@ pipeline {
       }
     }
     stage("SonarQube Analysis") {
+      environment {
+        SCANNER_HOME = tool 'SonarQubeScanner';
+      }
       steps {
         withSonarQubeEnv('sonar-server') {
           sh "${tool hudson.plugins.sonar.SonarRunnerInstallation}/bin/sonar-scanner"
