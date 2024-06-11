@@ -2,7 +2,6 @@ pipeline {
   agent any 
   tools {
     nodejs "npm"
-    sonar hudson.plugins.sonar.SonarRunnerInstallation
   }
   environment {
     GITHUB_TOKEN = credentials('github_key')
@@ -28,7 +27,7 @@ pipeline {
     stage("SonarQube Analysis") {
       steps {
         withSonarQubeEnv('sonar-server') {
-          sh "${tool 'sonar'}/bin/sonar-scanner"
+          sh "${tool hudson.plugins.sonar.SonarRunnerInstallation}/bin/sonar-scanner"
         }
       }
     }
