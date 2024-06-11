@@ -2,6 +2,7 @@ pipeline {
   agent any 
   tools {
     nodejs "npm"
+    sonarScanner "sonar-scanner"
   }
   environment {
     GITHUB_TOKEN = credentials('github_key')
@@ -24,13 +25,11 @@ pipeline {
         sh 'npm run test'
       }
     }
-    stage('SCM') {
-    checkout scm
-    }
-    stage('SonarQube Analysis') {
-      def scannerHome = tool 'SonarScanner';
-      withSonarQubeEnv() {
-        sh "${scannerHome}/bin/sonar-scanner"
+    stage("SonarQube Analysis") {
+      steps {
+        withSonarQubeEnv('sonar-server') {
+          sh "${tool 'sonar-scanner'}/bin/sonar-scanner"
+        }
       }
     }
     stage("Push to Github") {
