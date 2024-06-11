@@ -2,7 +2,7 @@ pipeline {
   agent any 
   tools {
     nodejs "npm"
-    sonar "sonar-scanner"
+    sonar hudson.plugins.sonar.SonarRunnerInstallation
   }
   environment {
     GITHUB_TOKEN = credentials('github_key')
