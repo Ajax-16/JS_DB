@@ -34,11 +34,7 @@ export default {
     },
     hasDuplicity: function (array) {
         let arraySet = new Set([...array]);
-        if (arraySet.size < array.length) {
-            return true;
-        } else {
-            return false;
-        }
+        return arraySet.size < array.length
     },
     editByIndex: function (array, index, newElement) {
         if (index >= 0 && index < array.length) {
